@@ -252,8 +252,8 @@ function Home({ setView, user, seats }) {
           <span>🔮 오늘의 오피스 운세 & 직장 궁합</span>
         </button>
 
-        <button onClick={() => window.api.triggerLunchMatch(Object.values(seats || {}))} className="w-full p-5 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-400 hover:to-pink-400 rounded-2xl font-black text-lg text-white shadow-[0_0_20px_rgba(249,115,22,0.4)] transition-all active:scale-95 flex flex-col items-center gap-1">
-          <span>🍱 AI 맛집 탐험대 랜덤 매칭하기</span>
+       <button onClick={handleLunchMatchClick} className="bg-orange-500 ...">
+        🍱 AI 맛집 탐험대
         </button>
         <button onClick={() => setView('map')} className="w-full p-5 bg-gray-800 hover:bg-gray-700 rounded-2xl font-bold text-lg border border-gray-700 transition-all flex items-center justify-center gap-2">🗺️ 오피스 전체 지도 보기</button>
         <button onClick={() => setView('zone')} className="w-full p-5 bg-gray-800 hover:bg-gray-700 rounded-2xl font-bold text-lg border border-gray-700 transition-all flex items-center justify-center gap-2">🏢 부서별/구역별 현황</button>
