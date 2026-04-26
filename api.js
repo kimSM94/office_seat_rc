@@ -203,10 +203,9 @@ window.api = {
       .subscribe();
   },
 
- // 12. 🍱 AI 맛집 탐험대 랜덤 매칭하기 (디스코드 전송)
+// 12. 🍱 AI 맛집 탐험대 랜덤 매칭하기
   triggerLunchMatch: async (seatsArray) => {
     try {
-      // 1. 현재 근무중인 인원만 필터링 (기존 로직 유지)
       const activeMembers = seatsArray.filter(seat => seat.status === '근무중' && seat.name);
       
       if (activeMembers.length < 2) {
@@ -214,28 +213,29 @@ window.api = {
         return;
       }
 
-      // 2. 랜덤으로 인원 섞기 및 팀 구성 (예시 로직 - 기존에 쓰시던 매칭 로직을 그대로 쓰셔도 됩니다)
       const shuffled = [...activeMembers].sort(() => 0.5 - Math.random());
       const team1 = shuffled.slice(0, Math.ceil(shuffled.length / 2)).map(m => m.name).join(', ');
       const team2 = shuffled.slice(Math.ceil(shuffled.length / 2)).map(m => m.name).join(', ');
 
-      const matchMessage = `🍱 **오늘의 AI 맛집 탐험대 매칭 결과!** 🍱\n\n🍕 A팀: ${team1}\n🍔 B팀: ${team2}\n\n즐거운 점심시간 되세요! 🚀`;
+      const matchMessage = `🍱 오늘의 맛집 탐험대 매칭 결과! 🍱\n\n🍕 A팀: ${team1}\n🍔 B팀: ${team2}\n\n즐거운 점심시간 되세요! 🚀`;
 
-      // 3. 🚨 대망의 안전한 디스코드 전송! (프론트엔드 -> 금고(Worker) -> 디스코드)
-      const res = await fetch(WORKER_URL, {
+      // 💡 디스코드 알림 전송 (원하지 않으면 이 fetch 블록을 통째로 지우셔도 됩니다)
+      await fetch(WORKER_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'discord',
           payload: {
-            content: matchMessage // 여기에 구성된 점심 매칭 결과 텍스트를 넣습니다.
+            content: matchMessage 
           }
         })
       });
 
-      if (!res.ok) throw new Error("디스코드 전송에 실패했습니다.");
+      // 🚨 변경된 부분: 성공 알림 대신, 매칭 결과 텍스트 자체를 화면에 바로 띄워줍니다!
+      alert(matchMessage);
       
-      alert("디스코드로 점심 매칭 결과가 전송되었습니다! 🚀");
+      // (선택) 프론트엔드 모달창 등에 텍스트를 전달하기 위해 값을 반환합니다.
+      return matchMessage;
 
     } catch (error) {
       console.error("점심 매칭 오류:", error);
