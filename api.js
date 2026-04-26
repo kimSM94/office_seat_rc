@@ -203,44 +203,69 @@ window.api = {
       .subscribe();
   },
 
-// 12. 🍱 AI 맛집 탐험대 랜덤 매칭하기
-  triggerLunchMatch: async (seatsArray) => {
-    try {
-      const activeMembers = seatsArray.filter(seat => seat.status === '근무중' && seat.name);
-      
-      if (activeMembers.length < 2) {
-        alert("점심 매칭을 하려면 근무중인 인원이 최소 2명 이상이어야 합니다!");
-        return;
-      }
-
-      const shuffled = [...activeMembers].sort(() => 0.5 - Math.random());
-      const team1 = shuffled.slice(0, Math.ceil(shuffled.length / 2)).map(m => m.name).join(', ');
-      const team2 = shuffled.slice(Math.ceil(shuffled.length / 2)).map(m => m.name).join(', ');
-
-      const matchMessage = `🍱 오늘의 맛집 탐험대 매칭 결과! 🍱\n\n🍕 A팀: ${team1}\n🍔 B팀: ${team2}\n\n즐거운 점심시간 되세요! 🚀`;
-
-      // 💡 디스코드 알림 전송 (원하지 않으면 이 fetch 블록을 통째로 지우셔도 됩니다)
-      await fetch(WORKER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'discord',
-          payload: {
-            content: matchMessage 
-          }
-        })
-      });
-
-      // 🚨 변경된 부분: 성공 알림 대신, 매칭 결과 텍스트 자체를 화면에 바로 띄워줍니다!
-      alert(matchMessage);
-      
-      // (선택) 프론트엔드 모달창 등에 텍스트를 전달하기 위해 값을 반환합니다.
-      return matchMessage;
-
-    } catch (error) {
-      console.error("점심 매칭 오류:", error);
-      alert("점심 매칭 중 오류가 발생했습니다.");
+ // 12. 🍱 AI 맛집 탐험대 (GPS 반경 2km 맛집 추천)
+  triggerLunchMatch: async () => {
+    // 1. 브라우저가 위치 정보를 지원하는지 확인
+    if (!navigator.geolocation) {
+      alert("이 브라우저에서는 GPS 위치 정보를 지원하지 않습니다.");
+      return;
     }
+
+    alert("📡 현재 위치를 파악하여 주변 맛집을 탐색 중입니다... (약 10초 소요)");
+
+    return new Promise((resolve, reject) => {
+      // 2. 사용자의 현재 GPS 좌표 가져오기
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        const lat = position.coords.latitude;  // 위도
+        const lon = position.coords.longitude; // 경도
+
+        try {
+          // 3. AI에게 보낼 프롬프트 작성 (좌표 기반)
+          const prompt = `나의 현재 위치는 GPS 좌표로 위도 ${lat}, 경도 ${lon}야.
+          이 위치를 기준으로 반경 2km 이내에 있는 직장인 점심 맛집 3곳을 추천해줘.
+          실제로 존재하는 식당 이름이나, 이 주변에서 먹기 좋은 특정 메뉴들을 센스 있게 설명해줘.
+          1. 🥘 [식당 이름 또는 메뉴] - 추천 이유와 거리감
+          2. 🍜 [식당 이름 또는 메뉴] - 추천 이유와 거리감
+          3. 🍱 [식당 이름 또는 메뉴] - 추천 이유와 거리감`;
+
+          // 4. 금고(Worker)를 통해 OpenAI에 요청
+          const res = await fetch(WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'chat', // 기존에 만들어둔 chat 타입 사용
+              payload: {
+                model: 'gpt-4o-mini',
+                messages: [
+                  { role: 'system', content: '너는 직장인들의 점심 메뉴를 기가 막히게 골라주는 AI 맛집 탐험대장이야.' },
+                  { role: 'user', content: prompt }
+                ],
+                temperature: 0.8
+              }
+            })
+          });
+
+          if (!res.ok) throw new Error("맛집을 찾는 중 신호가 끊겼습니다.");
+          const json = await res.json();
+          
+          const resultText = json.choices[0].message.content;
+          
+          // 5. 운세처럼 화면에 결과 바로 띄우기 (또는 리액트 컴포넌트로 전달)
+          // alert(resultText); // 알림창으로 보고 싶다면 주석 해제
+          resolve(resultText);
+
+        } catch (error) {
+          console.error("맛집 추천 오류:", error);
+          alert("AI가 주변 맛집을 찾는 데 실패했습니다.");
+          reject(error);
+        }
+      }, (error) => {
+        // GPS 권한 거부 시
+        console.error("GPS 권한 에러:", error);
+        alert("GPS 위치 정보 접근 권한을 허용해 주셔야 주변 맛집을 찾을 수 있습니다!");
+        reject(error);
+      });
+    });
   },
 
   // 13. AI 오늘의 오피스 사주/운세 보기
