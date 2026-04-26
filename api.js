@@ -215,7 +215,7 @@ window.api = {
         const lon = position.coords.longitude;
 
         try {
-          // 1. 카카오 API로 현재 위치 반경 2km 이내의 '진짜' 식당 데이터 긁어오기
+         // 1. 카카오 API로 데이터 긁어오기
           const kakaoRes = await fetch(WORKER_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -224,8 +224,16 @@ window.api = {
           
           const kakaoData = await kakaoRes.json();
           
+          // 🚨 [여기에 CCTV 추가!] 카카오가 도대체 뭐라고 보냈는지 콘솔창에 찍어봅니다.
+          console.log("🚨 카카오 API 응답 데이터:", kakaoData); 
+
+          // 🚨 [추가] 카카오가 식당 목록 대신 에러 코드를 보냈다면 화면에 띄웁니다.
+          if (kakaoData.code || kakaoData.msg) {
+            throw new Error(`카카오 에러: ${kakaoData.msg}`);
+          }
+          
           if (!kakaoData.documents || kakaoData.documents.length === 0) {
-            throw new Error("주변에 검색되는 카카오맵 맛집이 없습니다!");
+            throw new Error("주변에 검색되는 카카오맵 맛집이 없습니다! (진짜 없는 경우)");
           }
 
           // 2. 카카오에서 받은 정보 중 상위 5개를 깔끔한 텍스트로 정리
