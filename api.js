@@ -1,8 +1,12 @@
 // 💡 본인의 API 정보로 반드시 교체하세요!
 const SUPABASE_URL = 'https://kzrlzkmpcfqtwfwkbdbm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6cmx6a21wY2ZxdHdmd2tiZGJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NzU4MzAsImV4cCI6MjA5MjA1MTgzMH0.lf5haWoI9S3mpf1cYfvNsP1U0IuxEp7JBw5hnFUWZF4';
+
+// 🔒 비밀 키들은 모두 별표(*) 처리! (중요)
 const OPENAI_API_KEY = '*';
-const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1497799152505983078/nT-PFEA3y4g5NhakXcT6Ihl7mSwGUnCubMHkBKlBGvB4_2QfB0xJD-hSwBvOARMeeDtS';
+const DISCORD_WEBHOOK_URL = '*'; 
+
+// 🌐 금고(Worker) 주소는 당당하게 공개!
 const WORKER_URL = "https://office-ai-bridge.rnentkdals.workers.dev";
 
 
