@@ -9,22 +9,18 @@ const DISCORD_WEBHOOK_URL = '*';
 // 🌐 금고(Worker) 주소는 당당하게 공개!
 const WORKER_URL = "https://office-ai-bridge.rnentkdals.workers.dev";
 
-
-
 // Supabase 초기화
 window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// 💡 디스코드 알림 전송용 공통 함수
+// 💡 디스코드 알림 전송용 공통 함수 (Worker로 이관)
 const sendDiscord = async (message) => {
   try {
-    await fetch(DISCORD_WEBHOOK_URL, {
+    await fetch(WORKER_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      // 디스코드는 'content'라는 키값으로 텍스트를 받습니다!
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        content: message
+        type: 'discord',
+        payload: { content: message }
       })
     });
   } catch (e) {
@@ -32,47 +28,33 @@ const sendDiscord = async (message) => {
   }
 };
 
-
 window.api = {
   // 1. 전체 좌석 데이터 가져오기
   fetchSeats: async () => {
-    const {
-      data,
-      error
-    } = await window.supabase.from('employee_seats').select('*');
+    const { data, error } = await window.supabase.from('employee_seats').select('*');
     if (error) throw error;
     return data;
   },
 
   // 2. 좌석 상태(근무중/휴가 등) 업데이트
   updateStatus: async (id, newStatus) => {
-    const {
-      error
-    } = await window.supabase.from('employee_seats').update({
-      status: newStatus
-    }).eq('id', id);
+    const { error } = await window.supabase.from('employee_seats').update({ status: newStatus }).eq('id', id);
     if (error) throw error;
   },
 
-  // 3. AI 담당자 검색 (RAG)
+  // 3. AI 담당자 검색 (RAG) - Worker로 이관
   searchEmployee: async (searchQuery) => {
-    const embeddingRes = await fetch('https://api.openai.com/v1/embeddings', {
+    const embeddingRes = await fetch(WORKER_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'text-embedding-3-small',
-        input: searchQuery
+        type: 'embedding',
+        payload: { model: 'text-embedding-3-small', input: searchQuery }
       })
     });
     const embeddingData = await embeddingRes.json();
 
-    const {
-      data,
-      error
-    } = await window.supabase.rpc('match_employees', {
+    const { data, error } = await window.supabase.rpc('match_employees', {
       query_embedding: embeddingData.data[0].embedding,
       match_threshold: 0.2,
       match_count: 1
@@ -81,7 +63,7 @@ window.api = {
     return data;
   },
 
-  // 4. AI 빈자리 추천 (LLM)
+  // 4. AI 빈자리 추천 (LLM) - Worker로 이관
   recommendSeats: async (searchQuery, mapState) => {
     const systemPrompt = `당신은 천재적인 오피스 공간 매니저입니다.
 현재 50석의 좌석 배치도 JSON: ${JSON.stringify(mapState)}
@@ -91,22 +73,19 @@ window.api = {
 2. 무조건 최대 3개까지만 추천하세요.
 3. 오직 좌석 ID 문자열의 JSON 배열로만 응답하세요. 예시: ["C4", "C5"]`;
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch(WORKER_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{
-          role: 'system',
-          content: systemPrompt
-        }, {
-          role: 'user',
-          content: searchQuery
-        }],
-        temperature: 0.1
+        type: 'chat',
+        payload: {
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: searchQuery }
+          ],
+          temperature: 0.1
+        }
       })
     });
     const json = await res.json();
@@ -115,29 +94,18 @@ window.api = {
     return JSON.parse(content);
   },
 
-  // 5. 자리 이동 요청 로직 (api.js 내부)
+  // 5. 자리 이동 요청 로직 (중복된 Worker URL 변수 제거)
   createRequest: async (seatId, requesterName) => {
-    await window.supabase.from('seat_requests').update({
-      status: 'rejected'
-    }).eq('seat_id', seatId).eq('status', 'pending');
-    const {
-      data,
-      error
-    } = await window.supabase.from('seat_requests').insert([{
+    await window.supabase.from('seat_requests').update({ status: 'rejected' }).eq('seat_id', seatId).eq('status', 'pending');
+    const { data, error } = await window.supabase.from('seat_requests').insert([{
       seat_id: seatId,
       requester_name: requesterName,
       status: 'pending'
     }]);
 
     if (!error) {
-      // 💡 본인의 Cloudflare Worker 주소로 변경하세요!
-      const WORKER_URL = 'https://office-api-worker.rnentkdals.workers.dev';
-
-      // 변수를 URL에 탑재하여 링크로 만듭니다. (띄어쓰기 인코딩 처리)
       const encodedName = encodeURIComponent(requesterName);
       const approveLink = `${WORKER_URL}/?action=approve&seatId=${seatId}&name=${encodedName}`;
-
-      // 마크다운 형식 [보이는 텍스트](실제 링크) 적용
       await sendDiscord(`🚨 **[새로운 좌석 이동 요청]**\n👤 신청자: **${requesterName}**\n🪑 희망 좌석: **${seatId}석**\n\n👉 [✅ 여기서 1초 만에 즉시 승인하기](${approveLink})`);
     }
 
