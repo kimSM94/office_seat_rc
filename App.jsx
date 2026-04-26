@@ -367,6 +367,27 @@ function Home({ setView, user, seats }) {
   );
 }
 
+const handleLunchMatchClick = async () => {
+  // 1. 로딩 스피너 켜기 (궁합/사주 볼 때와 똑같이!)
+  setIsLoading(true); 
+  
+  try {
+    // 2. api.js의 맛집 함수 실행 (GPS 동의 알림이 뜨고, 로딩이 돕니다)
+    const resultText = await window.api.triggerLunchMatch();
+    
+    // 3. 결과를 모달창 내용에 집어넣고, 모달창 띄우기!
+    setResultModalContent(resultText); 
+    setIsResultModalOpen(true); 
+
+  } catch (error) {
+    // 에러가 나면 경고창 띄우기
+    alert(error.message);
+  } finally {
+    // 4. 로딩 스피너 끄기
+    setIsLoading(false); 
+  }
+};
+
 // 렌더링
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);

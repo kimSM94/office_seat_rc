@@ -203,24 +203,19 @@ window.api = {
       .subscribe();
   },
 
- // 12. 🍱 AI 맛집 탐험대 (GPS 반경 2km 맛집 추천)
+// 12. 🍱 AI 맛집 탐험대 (GPS 반경 2km 맛집 추천)
   triggerLunchMatch: async () => {
-    // 1. 브라우저가 위치 정보를 지원하는지 확인
     if (!navigator.geolocation) {
-      alert("이 브라우저에서는 GPS 위치 정보를 지원하지 않습니다.");
-      return;
+      throw new Error("이 브라우저에서는 GPS 위치 정보를 지원하지 않습니다.");
     }
 
-    alert("📡 현재 위치를 파악하여 주변 맛집을 탐색 중입니다... (약 10초 소요)");
-
+    // 화면 쪽(App.jsx)에서 로딩 창을 띄울 수 있도록 Promise로 응답을 던져줍니다.
     return new Promise((resolve, reject) => {
-      // 2. 사용자의 현재 GPS 좌표 가져오기
       navigator.geolocation.getCurrentPosition(async (position) => {
-        const lat = position.coords.latitude;  // 위도
-        const lon = position.coords.longitude; // 경도
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
 
         try {
-          // 3. AI에게 보낼 프롬프트 작성 (좌표 기반)
           const prompt = `나의 현재 위치는 GPS 좌표로 위도 ${lat}, 경도 ${lon}야.
           이 위치를 기준으로 반경 2km 이내에 있는 직장인 점심 맛집 3곳을 추천해줘.
           실제로 존재하는 식당 이름이나, 이 주변에서 먹기 좋은 특정 메뉴들을 센스 있게 설명해줘.
@@ -228,12 +223,11 @@ window.api = {
           2. 🍜 [식당 이름 또는 메뉴] - 추천 이유와 거리감
           3. 🍱 [식당 이름 또는 메뉴] - 추천 이유와 거리감`;
 
-          // 4. 금고(Worker)를 통해 OpenAI에 요청
           const res = await fetch(WORKER_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              type: 'chat', // 기존에 만들어둔 chat 타입 사용
+              type: 'chat',
               payload: {
                 model: 'gpt-4o-mini',
                 messages: [
@@ -248,22 +242,14 @@ window.api = {
           if (!res.ok) throw new Error("맛집을 찾는 중 신호가 끊겼습니다.");
           const json = await res.json();
           
-          const resultText = json.choices[0].message.content;
-          
-          // 5. 운세처럼 화면에 결과 바로 띄우기 (또는 리액트 컴포넌트로 전달)
-          // alert(resultText); // 알림창으로 보고 싶다면 주석 해제
-          resolve(resultText);
+          // 맛집 결과 텍스트를 화면(App.jsx)으로 쏴줍니다!
+          resolve(json.choices[0].message.content);
 
         } catch (error) {
-          console.error("맛집 추천 오류:", error);
-          alert("AI가 주변 맛집을 찾는 데 실패했습니다.");
-          reject(error);
+          reject(new Error("AI가 주변 맛집을 찾는 데 실패했습니다."));
         }
       }, (error) => {
-        // GPS 권한 거부 시
-        console.error("GPS 권한 에러:", error);
-        alert("GPS 위치 정보 접근 권한을 허용해 주셔야 주변 맛집을 찾을 수 있습니다!");
-        reject(error);
+        reject(new Error("GPS 위치 정보 접근 권한을 허용해 주셔야 맛집을 찾을 수 있습니다!"));
       });
     });
   },
