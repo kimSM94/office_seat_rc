@@ -302,7 +302,17 @@ window.api = {
     });
     
     if (!res.ok) throw new Error("운세를 불러오는 중 신기가 떨어졌습니다.");
-    const json = await res.json();
+   const json = await res.json();
+    
+    // 💡 범인을 잡기 위해 콘솔창에 찍어보는 코드를 추가합니다!
+    console.log("🚨 Worker에서 온 데이터 확인:", json); 
+
+    // 에러가 있다면 화면에 띄워줍니다.
+    if (json.error) {
+      alert("API 에러 발생: " + (json.error.message || json.error));
+      return;
+    }
+
     return json.choices[0].message.content;
   },
 
@@ -332,6 +342,16 @@ window.api = {
     
     if (!res.ok) throw new Error("궁합을 분석하는 중 에러가 발생했습니다.");
     const json = await res.json();
+    
+    // 💡 범인을 잡기 위해 콘솔창에 찍어보는 코드를 추가합니다!
+    console.log("🚨 Worker에서 온 데이터 확인:", json); 
+
+    // 에러가 있다면 화면에 띄워줍니다.
+    if (json.error) {
+      alert("API 에러 발생: " + (json.error.message || json.error));
+      return;
+    }
+
     return json.choices[0].message.content;
   },
 
