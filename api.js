@@ -203,26 +203,40 @@ window.api = {
       .subscribe();
   },
 
-// 12. 🍱 AI 맛집 탐험대 (GPS 반경 2km 맛집 추천)
+// 12. 🍱 AI 맛집 탐험대 (카카오 API '진짜 맛집' 기반 추천)
   triggerLunchMatch: async () => {
     if (!navigator.geolocation) {
       throw new Error("이 브라우저에서는 GPS 위치 정보를 지원하지 않습니다.");
     }
 
-    // 화면 쪽(App.jsx)에서 로딩 창을 띄울 수 있도록 Promise로 응답을 던져줍니다.
     return new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(async (position) => {
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
 
         try {
-          const prompt = `나의 현재 위치는 GPS 좌표로 위도 ${lat}, 경도 ${lon}야.
-          이 위치를 기준으로 반경 2km 이내에 있는 직장인 점심 맛집 3곳을 추천해줘.
-          실제로 존재하는 식당 이름이나, 이 주변에서 먹기 좋은 특정 메뉴들을 센스 있게 설명해줘.
-          1. 🥘 [식당 이름 또는 메뉴] - 추천 이유와 거리감
-          2. 🍜 [식당 이름 또는 메뉴] - 추천 이유와 거리감
-          3. 🍱 [식당 이름 또는 메뉴] - 추천 이유와 거리감`;
+          // 1. 카카오 API로 현재 위치 반경 2km 이내의 '진짜' 식당 데이터 긁어오기
+          const kakaoRes = await fetch(WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'kakao', payload: { lat, lon } })
+          });
+          
+          const kakaoData = await kakaoRes.json();
+          
+          if (!kakaoData.documents || kakaoData.documents.length === 0) {
+            throw new Error("주변에 검색되는 카카오맵 맛집이 없습니다!");
+          }
 
+          // 2. 카카오에서 받은 정보 중 상위 5개를 깔끔한 텍스트로 정리
+          const realPlaces = kakaoData.documents.slice(0, 5).map(place => 
+            `- 식당명: ${place.place_name} (종류: ${place.category_name.split('>').pop().trim()}) / 거리: ${place.distance}m / 주소: ${place.road_address_name || place.address_name}`
+          ).join('\n');
+
+          // 3. AI에게 "이 진짜 리스트 중에서만 골라서 추천해!" 라고 멱살 잡기
+          const prompt = `내 주변에 실제로 있는 카카오맵 맛집 리스트 5개야.\n\n${realPlaces}\n\n반드시 이 진짜 리스트 안에 있는 식당 중에서만 3곳을 골라줘. 직장인 점심 식사로 왜 좋은지, 식당 이름과 거리를 포함해서 아주 유쾌하고 침 고이게 설명해줘. 절대로 목록에 없는 가상의 식당을 지어내면 안 돼!`;
+
+          // 4. OpenAI에 요청 전송
           const res = await fetch(WORKER_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -231,25 +245,25 @@ window.api = {
               payload: {
                 model: 'gpt-4o-mini',
                 messages: [
-                  { role: 'system', content: '너는 직장인들의 점심 메뉴를 기가 막히게 골라주는 AI 맛집 탐험대장이야.' },
+                  { role: 'system', content: '너는 팩트(Fact) 기반으로 점심 메뉴를 기가 막히게 추천해주는 사내 맛집 탐험대장이야.' },
                   { role: 'user', content: prompt }
                 ],
-                temperature: 0.8
+                temperature: 0.5 // 창의성을 확 낮춰서 헛소리(환각) 차단
               }
             })
           });
 
-          if (!res.ok) throw new Error("맛집을 찾는 중 신호가 끊겼습니다.");
+          if (!res.ok) throw new Error("맛집 정보를 분석하는 중 에러가 발생했습니다.");
           const json = await res.json();
           
-          // 맛집 결과 텍스트를 화면(App.jsx)으로 쏴줍니다!
+          // 최종 결과 화면으로 쏘기!
           resolve(json.choices[0].message.content);
 
         } catch (error) {
-          reject(new Error("AI가 주변 맛집을 찾는 데 실패했습니다."));
+          reject(new Error(error.message || "AI가 진짜 맛집을 찾는 데 실패했습니다."));
         }
       }, (error) => {
-        reject(new Error("GPS 위치 정보 접근 권한을 허용해 주셔야 맛집을 찾을 수 있습니다!"));
+        reject(new Error("GPS 위치 정보 접근 권한을 허용해 주셔야 진짜 맛집을 찾을 수 있습니다!"));
       });
     });
   },
