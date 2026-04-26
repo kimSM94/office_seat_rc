@@ -74,26 +74,7 @@ function App() {
     }
   };
 
-  const handleLunchMatchClick = async () => {
-  // 1. 로딩 스피너 켜기 (궁합/사주 볼 때와 똑같이!)
-  setIsLoading(true); 
   
-  try {
-    // 2. api.js의 맛집 함수 실행 (GPS 동의 알림이 뜨고, 로딩이 돕니다)
-    const resultText = await window.api.triggerLunchMatch();
-    
-    // 3. 결과를 모달창 내용에 집어넣고, 모달창 띄우기!
-    setResultModalContent(resultText); 
-    setIsResultModalOpen(true); 
-
-  } catch (error) {
-    // 에러가 나면 경고창 띄우기
-    alert(error.message);
-  } finally {
-    // 4. 로딩 스피너 끄기
-    setIsLoading(false); 
-  }
-};
 
   const handleAISearch = async () => { /* 기존 로직 동일 */ };
   const handleAIRecommend = async () => { /* 기존 로직 동일 */ };
@@ -184,6 +165,9 @@ function App() {
 // ==========================================
 // 2. 홈 화면 (Home) 컴포넌트 (오타 수정본!)
 // ==========================================
+// ==========================================
+// 2. 홈 화면 (Home) 컴포넌트 (맛집 탐험대 완벽 적용본!)
+// ==========================================
 function Home({ setView, user, seats }) {
   const [isSajuInputOpen, setIsSajuInputOpen] = React.useState(false); 
   const [sajuMode, setSajuMode] = React.useState('individual'); 
@@ -205,6 +189,10 @@ function Home({ setView, user, seats }) {
 
   const [sajuResult, setSajuResult] = React.useState(''); 
   const [isSajuLoading, setIsSajuLoading] = React.useState(false);
+
+  // 🚨 [새로 추가됨] 맛집 탐험대 전용 상태 변수!
+  const [lunchResult, setLunchResult] = React.useState(''); 
+  const [isLunchLoading, setIsLunchLoading] = React.useState(false);
 
   const years = Array.from({ length: 56 }, (_, i) => 2005 - i);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -258,6 +246,19 @@ function Home({ setView, user, seats }) {
     }
   };
 
+  // 🚨 [새로 추가됨] 맛집 탐험대 실행 함수!
+  const handleLunchMatchClick = async () => {
+    setIsLunchLoading(true); // 오렌지색 로딩창 켜기
+    try {
+      const resultText = await window.api.triggerLunchMatch(); // api.js 호출
+      setLunchResult(resultText); // 결과값을 저장
+    } catch (error) {
+      alert(error.message); // 권한 거부 등 에러 발생 시
+    } finally {
+      setIsLunchLoading(false); // 로딩창 끄기
+    }
+  };
+
   return (
     <div className="h-full flex flex-col items-center justify-center p-6 bg-gray-900 text-white animate-in fade-in relative overflow-hidden">
       
@@ -273,14 +274,16 @@ function Home({ setView, user, seats }) {
           <span>🔮 오늘의 오피스 운세 & 직장 궁합</span>
         </button>
 
+        {/* 🚨 버튼에 handleLunchMatchClick 함수를 연결했습니다! */}
         <button onClick={handleLunchMatchClick} className="w-full p-5 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-400 hover:to-pink-400 rounded-2xl font-black text-lg text-white shadow-[0_0_20px_rgba(249,115,22,0.4)] transition-all active:scale-95 flex flex-col items-center gap-1">
-          <span>🍱 AI 맛집 탐험대 랜덤 매칭하기</span>
+          <span>🍱 AI 맛집 탐험대 (주변 맛집 찾기)</span>
         </button>
+        
         <button onClick={() => setView('map')} className="w-full p-5 bg-gray-800 hover:bg-gray-700 rounded-2xl font-bold text-lg border border-gray-700 transition-all flex items-center justify-center gap-2">🗺️ 오피스 전체 지도 보기</button>
         <button onClick={() => setView('zone')} className="w-full p-5 bg-gray-800 hover:bg-gray-700 rounded-2xl font-bold text-lg border border-gray-700 transition-all flex items-center justify-center gap-2">🏢 부서별/구역별 현황</button>
       </div>
 
-      {/* 🌟 1. 화려한 로딩 오버레이 */}
+      {/* 🌟 1-A. 사주 전용 화려한 로딩 오버레이 */}
       {isSajuLoading && (
         <div className="absolute inset-0 bg-gray-900/90 backdrop-blur-md flex flex-col items-center justify-center z-[100] animate-in fade-in duration-300">
           <div className="text-7xl animate-bounce mb-6">🔮</div>
@@ -291,7 +294,18 @@ function Home({ setView, user, seats }) {
         </div>
       )}
 
-      {/* 🔮 2. 입력 모달창 */}
+      {/* 🌟 1-B. 맛집 전용 화려한 로딩 오버레이 */}
+      {isLunchLoading && (
+        <div className="absolute inset-0 bg-gray-900/90 backdrop-blur-md flex flex-col items-center justify-center z-[100] animate-in fade-in duration-300">
+          <div className="text-7xl animate-bounce mb-6">🍱</div>
+          <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-pink-400 animate-pulse text-center">
+            주변 맛집을<br/>탐색하고 있습니다...
+          </h3>
+          <p className="text-gray-400 mt-4 text-sm font-medium">AI가 GPS 반경 2km 이내의 핫플을 스캔 중입니다 📡</p>
+        </div>
+      )}
+
+      {/* 🔮 2. 사주 입력 모달창 (기존 코드와 동일) */}
       {isSajuInputOpen && !isSajuLoading && (
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-in fade-in">
           <div className="bg-gray-800 p-6 rounded-3xl max-w-sm w-full border border-gray-700 shadow-2xl max-h-[85vh] overflow-y-auto">
@@ -302,7 +316,6 @@ function Home({ setView, user, seats }) {
               <button onClick={() => setSajuMode('team')} className={`flex-1 p-2 text-xs font-bold rounded-lg transition-colors ${sajuMode === 'team' ? 'bg-purple-600 text-white' : 'text-gray-400'}`}>🏢 팀 궁합</button>
             </div>
 
-            {/* A. 개인 및 1:1 궁합 UI */}
             {sajuMode !== 'team' && (
               <>
                 <div className="space-y-4 mb-6">
@@ -310,7 +323,6 @@ function Home({ setView, user, seats }) {
                   <div>
                     <input type="text" placeholder="이름" value={myName} onChange={(e) => setMyName(e.target.value)} className="w-full p-3 bg-gray-900 rounded-xl border border-gray-700 text-white mb-2" />
                     <div className="flex gap-2">
-                      {/* 💡 문제의 < 기호를 모두 지웠습니다! */}
                       <select value={myYear} onChange={(e) => setMyYear(e.target.value)} className="w-1/3 p-3 bg-gray-900 rounded-xl border border-gray-700 text-white">{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
                       <select value={myMonth} onChange={(e) => setMyMonth(e.target.value)} className="w-1/3 p-3 bg-gray-900 rounded-xl border border-gray-700 text-white">{months.map(m => <option key={m} value={m}>{m}</option>)}</select>
                       <select value={myDay} onChange={(e) => setMyDay(e.target.value)} className="w-1/3 p-3 bg-gray-900 rounded-xl border border-gray-700 text-white">{days.map(d => <option key={d} value={d}>{d}</option>)}</select>
@@ -333,7 +345,6 @@ function Home({ setView, user, seats }) {
               </>
             )}
 
-            {/* B. 팀 전체 궁합 UI (동적 배열) */}
             {sajuMode === 'team' && (
               <div className="space-y-4 mb-6 animate-in fade-in">
                 <div className="flex justify-between items-end border-b border-gray-700 pb-2">
@@ -368,7 +379,7 @@ function Home({ setView, user, seats }) {
         </div>
       )}
 
-      {/* 🔮 3. 결과 모달창 */}
+      {/* 🔮 3-A. 사주 결과 모달창 */}
       {sajuResult && !isSajuLoading && (
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-in fade-in slide-in-from-bottom-10">
           <div className="bg-gray-800 p-6 rounded-3xl max-w-md w-full border border-purple-500/50 shadow-[0_0_40px_rgba(168,85,247,0.4)]">
@@ -380,6 +391,23 @@ function Home({ setView, user, seats }) {
             </div>
             <button onClick={() => setSajuResult('')} className="w-full p-4 mt-6 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold text-white transition-colors">
               결과 닫고 업무 복귀하기 🚀
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🍱 3-B. 맛집 결과 모달창 (오렌지 테마!) */}
+      {lunchResult && !isLunchLoading && (
+        <div className="absolute inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-in fade-in slide-in-from-bottom-10">
+          <div className="bg-gray-800 p-6 rounded-3xl max-w-md w-full border border-orange-500/50 shadow-[0_0_40px_rgba(249,115,22,0.4)]">
+            <h3 className="text-2xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-pink-400">
+              🍱 AI 맛집 탐험대 결과
+            </h3>
+            <div className="bg-gray-900 p-5 rounded-2xl text-gray-200 text-sm whitespace-pre-wrap leading-relaxed max-h-[50vh] overflow-y-auto border border-gray-700">
+              {lunchResult}
+            </div>
+            <button onClick={() => setLunchResult('')} className="w-full p-4 mt-6 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold text-white transition-colors">
+              맛집 확인 완료! 🚀
             </button>
           </div>
         </div>
