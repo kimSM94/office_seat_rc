@@ -105,7 +105,7 @@ function App() {
   const handleAISearch = async () => { /* 기존 로직 동일 */ };
   const handleAIRecommend = async () => { /* 기존 로직 동일 */ };
 
-  if (!user) return <AuthView onLoginSuccess={(userData) => setUser(userData)} />;
+  if (!user) return <AuthView onLoginSuccess={handleLoginSuccess} />;
   if (isLoading) return <div className="h-screen w-full bg-gray-900 flex items-center justify-center text-white font-bold">오피스 데이터 동기화 중...</div>;
 
   const isMySeat = selectedSeat?.name === user.name;
