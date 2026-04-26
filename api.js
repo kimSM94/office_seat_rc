@@ -1,9 +1,10 @@
 // 💡 본인의 API 정보로 반드시 교체하세요!
 const SUPABASE_URL = 'https://kzrlzkmpcfqtwfwkbdbm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6cmx6a21wY2ZxdHdmd2tiZGJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NzU4MzAsImV4cCI6MjA5MjA1MTgzMH0.lf5haWoI9S3mpf1cYfvNsP1U0IuxEp7JBw5hnFUWZF4';
-const OPENAI_API_KEY = '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';
+const OPENAI_API_KEY = '*';
 const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1497799152505983078/nT-PFEA3y4g5NhakXcT6Ihl7mSwGUnCubMHkBKlBGvB4_2QfB0xJD-hSwBvOARMeeDtS';
 const WORKER_URL = "https://office-ai-bridge.rnentkdals.workers.dev";
+
 
 
 // Supabase 초기화
@@ -26,6 +27,7 @@ const sendDiscord = async (message) => {
     console.error('디스코드 알림 전송 실패', e);
   }
 };
+
 
 window.api = {
   // 1. 전체 좌석 데이터 가져오기
@@ -229,83 +231,43 @@ window.api = {
       .subscribe();
   },
 
-  // 12. AI 맛집 탐험대 점심 랜덤 매칭 (GPS 기반)
+ // 12. 🍱 AI 맛집 탐험대 랜덤 매칭하기 (디스코드 전송)
   triggerLunchMatch: async (seatsArray) => {
-    // 1. 현재 브라우저 위치(GPS) 가져오기
-    const getGPS = () => new Promise((res) => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => res(`위도 ${pos.coords.latitude}, 경도 ${pos.coords.longitude}`),
-        () => res("서울 성수동") // 위치 권한 거부 시 기본값
-      );
-    });
-
-    const currentLocation = await getGPS();
-
-    // 2. 인원 필터링 및 랜덤 파티 구성 (여기서 partyMembers가 만들어집니다!)
-    const activeUsers = seatsArray.filter(s => s.status === '근무중' && s.name);
-    if (activeUsers.length < 2) {
-      alert('점심 매칭을 하려면 최소 2명 이상이 근무 중이어야 합니다!');
-      return;
-    }
-
-    const shuffled = activeUsers.sort(() => 0.5 - Math.random());
-    const partySize = Math.floor(Math.random() * 3) + 2;
-    const partyMembers = shuffled.slice(0, partySize).map(u => u.name);
-
-    alert('AI가 GPS 기반으로 맛집을 찾고 있습니다. 잠시만 기다려주세요... 🍱');
-
-    // 3. AI 프롬프트 세팅
-    const prompt = `오늘의 오피스 랜덤 점심 파티원은 [${partyMembers.join(', ')}]야. 
-    이 사람들을 위해 현재 내 위치(${currentLocation})에서 "반드시 반경 2km 이내"에 있는 매력적인 로컬 맛집을 딱 하나 추천해줘. 
-    조건 1: 무조건 이 좌표 기준 2km 반경 안에 존재하는 실제 식당이어야 해. (먼 곳은 절대 안 됨!)
-    조건 2: '일월카츠'처럼 가게 이름의 유래가 뚜렷하거나 요리에 대한 장인정신, 브랜딩 철학이 돋보이는 곳이어야 해.
-    식당 이름, 추천 메뉴, 그리고 이 식당만의 특별한 분위기나 네이밍 스토리를 디스코드 알림용으로 신나고 친근하게 작성해줘.`;
-
-    let aiMessage = "";
-
-    // 4. OpenAI 통신
     try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      // 1. 현재 근무중인 인원만 필터링 (기존 로직 유지)
+      const activeMembers = seatsArray.filter(seat => seat.status === '근무중' && seat.name);
+      
+      if (activeMembers.length < 2) {
+        alert("점심 매칭을 하려면 근무중인 인원이 최소 2명 이상이어야 합니다!");
+        return;
+      }
+
+      // 2. 랜덤으로 인원 섞기 및 팀 구성 (예시 로직 - 기존에 쓰시던 매칭 로직을 그대로 쓰셔도 됩니다)
+      const shuffled = [...activeMembers].sort(() => 0.5 - Math.random());
+      const team1 = shuffled.slice(0, Math.ceil(shuffled.length / 2)).map(m => m.name).join(', ');
+      const team2 = shuffled.slice(Math.ceil(shuffled.length / 2)).map(m => m.name).join(', ');
+
+      const matchMessage = `🍱 **오늘의 AI 맛집 탐험대 매칭 결과!** 🍱\n\n🍕 A팀: ${team1}\n🍔 B팀: ${team2}\n\n즐거운 점심시간 되세요! 🚀`;
+
+      // 3. 🚨 대망의 안전한 디스코드 전송! (프론트엔드 -> 금고(Worker) -> 디스코드)
+      const res = await fetch(WORKER_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [{
-              role: 'system',
-              content: '너는 센스 있는 컬처 매니저야.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.8
+          type: 'discord',
+          payload: {
+            content: matchMessage // 여기에 구성된 점심 매칭 결과 텍스트를 넣습니다.
+          }
         })
       });
 
-      if (!res.ok) throw new Error(`OpenAI 상태 코드 에러: ${res.status}`);
+      if (!res.ok) throw new Error("디스코드 전송에 실패했습니다.");
+      
+      alert("디스코드로 점심 매칭 결과가 전송되었습니다! 🚀");
 
-      const json = await res.json();
-      aiMessage = json.choices[0].message.content;
-
-    } catch (e) {
-      console.error("🚨 OpenAI Fetch 에러 상세:", e);
-      alert('OpenAI API 통신 실패!');
-      return;
-    }
-
-    // 5. 디스코드 전송
-    if (aiMessage) {
-      try {
-        await sendDiscord(`📍 **[GPS 기반 랜덤 점심 탐험대!]**\n\n${aiMessage}`);
-        alert('디스코드로 점심 매칭 결과가 전송되었습니다! 🎉');
-      } catch (e) {
-        console.error("Discord Fetch 에러:", e);
-        alert('디스코드 전송 실패!');
-      }
+    } catch (error) {
+      console.error("점심 매칭 오류:", error);
+      alert("점심 매칭 중 오류가 발생했습니다.");
     }
   },
 
