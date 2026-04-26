@@ -23,20 +23,58 @@ function App() {
   const [recommendedSeats, setRecommendedSeats] = useState([]); 
   const [aiMessage, setAiMessage] = useState('궁금한 담당자를 찾거나, 빈자리 배치를 요청해보세요!');
 
+// 1. [추가] 초기 로드 시 세션 확인 (새로고침 대응)
+  useEffect(() => {
+    const savedSession = localStorage.getItem('office_user_session');
+    
+    if (savedSession) {
+      const { userData, expiry } = JSON.parse(savedSession);
+      
+      // 현재 시간이 만료 시간보다 이전이면 로그인 유지
+      if (Date.now() < expiry) {
+        setUser(userData);
+      } else {
+        // 1시간이 지났으면 세션 삭제
+        localStorage.removeItem('office_user_session');
+        alert("세션이 만료되어 다시 로그인해주세요.");
+      }
+    }
+    setIsLoading(false); // 세션 확인 후 로딩 해제
+  }, []);
+
+  // 2. [수정] 로그인 성공 시 호출되는 함수 (만료 시간 설정)
+  const handleLoginSuccess = (userData) => {
+    const ONE_HOUR = 60 * 60 * 1000; // 1시간을 밀리초로 계산
+    const sessionData = {
+      userData: userData,
+      expiry: Date.now() + ONE_HOUR // 현재 시간 + 1시간
+    };
+    
+    // 브라우저 저장소에 저장
+    localStorage.setItem('office_user_session', JSON.stringify(sessionData));
+    setUser(userData);
+  };
+
+  // 3. [추가] 로그아웃 기능 (필요할 때 사용)
+  const handleLogout = () => {
+    localStorage.removeItem('office_user_session');
+    setUser(null);
+    window.location.reload(); // 깔끔하게 새로고침
+  };
+
+  // 4. 데이터 로드 로직 (기존 useEffect 수정)
   useEffect(() => {
     if (!user) return; 
 
     const loadInitialData = async () => {
       try {
-        setIsLoading(true);
+        // 여기서는 이미 isLoading이 위에서 관리되므로 데이터 로드 로직만 수행
         const data = await window.api.fetchSeats();
         const seatsObj = {};
         data.forEach(seat => { seatsObj[seat.id] = seat; });
         setSeats(seatsObj);
       } catch (error) {
         console.error('데이터 로드 실패:', error);
-      } finally {
-        setIsLoading(false);
       }
     };
     loadInitialData();
@@ -50,19 +88,7 @@ function App() {
         window.supabase.removeChannel(subscription); 
       }
     };
-  }, [user]); 
-
-  useEffect(() => {
-    if (selectedSeat) {
-      setCustomMessage(selectedSeat.status_message || '');
-      try {
-        const parsed = JSON.parse(selectedSeat.second_brain);
-        setSecondBrainData(parsed || { focus: '', todos: '', links: '' });
-      } catch (e) {
-        setSecondBrainData({ focus: selectedSeat.second_brain || '', todos: '', links: '' });
-      }
-    }
-  }, [selectedSeat]);
+  }, [user]);
 
   const handleStatusChange = async (id, newStatus) => {
     try {
