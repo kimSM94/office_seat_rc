@@ -1,8 +1,10 @@
 // 💡 본인의 API 정보로 반드시 교체하세요!
 const SUPABASE_URL = 'https://kzrlzkmpcfqtwfwkbdbm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6cmx6a21wY2ZxdHdmd2tiZGJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NzU4MzAsImV4cCI6MjA5MjA1MTgzMH0.lf5haWoI9S3mpf1cYfvNsP1U0IuxEp7JBw5hnFUWZF4';
-const OPENAI_API_KEY = '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';
+const OPENAI_API_KEY = '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';
 const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1497799152505983078/nT-PFEA3y4g5NhakXcT6Ihl7mSwGUnCubMHkBKlBGvB4_2QfB0xJD-hSwBvOARMeeDtS';
+const WORKER_URL = "https://office-ai-bridge.rnentkdals.workers.dev";
+
 
 // Supabase 초기화
 window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -316,111 +318,85 @@ window.api = {
     2. 💻 업무 & 귀인운
     3. 🍀 럭키 아이템`;
 
-    // 🚨 2번 계정 키가 필요합니다!
-    const MY_SECRET_KEY = "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";
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    // ❌ 이제 여기에 API 키가 없습니다! 보안 완벽!
+    const res = await fetch(WORKER_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${MY_SECRET_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{
-            role: 'system',
-            content: '너는 IT 회사의 사내 전속 용한 도사(사주 전문가)야.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.9
+        type: 'saju',
+        payload: {
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: '너는 IT 회사의 사내 전속 용한 도사(사주 전문가)야.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.9
+        }
       })
     });
-
+    
     if (!res.ok) throw new Error("운세를 불러오는 중 신기가 떨어졌습니다.");
     const json = await res.json();
     return json.choices[0].message.content;
   },
 
-  // 14. 🤝 AI 동료와의 업무 궁합 보기 (새로 추가!)
+  // 14. 🤝 AI 동료와의 업무 궁합 보기
   getOfficeChemistry: async (myName, myBirth, partnerName, partnerBirth) => {
     const prompt = `나의 이름은 ${myName}(생년월일: ${myBirth})이고, 직장 동료의 이름은 ${partnerName}(생년월일: ${partnerBirth})야.
     우리의 사주와 명리학을 바탕으로 '직장 동료로서의 업무 궁합'을 유쾌한 도사 컨셉으로 봐줘.
-    1. 📊 전반적인 업무 호흡 (누가 끌고 누가 밀어주는지 등)
-    2. ⚠️ 주의할 점 (회의할 때, 의견 충돌 시 피해야 할 행동)
-    3. 💡 시너지 팁 (같이 프로젝트를 할 때 효율을 극대화하는 방법)`;
+    1. 📊 전반적인 업무 호흡
+    2. ⚠️ 주의할 점
+    3. 💡 시너지 팁`;
 
-    // 🚨 2번 계정 키가 필요합니다!
-    const MY_SECRET_KEY = "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";
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch(WORKER_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${MY_SECRET_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{
-            role: 'system',
-            content: '너는 IT 회사의 사내 전속 용한 도사(사주 전문가)야.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.9
+        type: 'chemistry',
+        payload: {
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: '너는 IT 회사의 사내 전속 용한 도사(사주 전문가)야.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.9
+        }
       })
     });
-
+    
     if (!res.ok) throw new Error("궁합을 분석하는 중 에러가 발생했습니다.");
     const json = await res.json();
     return json.choices[0].message.content;
   },
 
-  // 15. 🏢 팀 전체 궁합 보기 (인원 무제한)
+  // 15. 🏢 팀 전체 궁합 보기
   getTeamChemistry: async (members) => {
-    // members 배열 데이터를 이름(생년월일) 형태의 텍스트로 합칩니다.
     const membersText = members.map(m => `${m.name}(${m.birth})`).join(', ');
-
     const prompt = `우리 팀원들의 이름과 생년월일은 다음과 같아: [${membersText}].
     이 사주와 명리학 데이터를 바탕으로 '팀 전체의 업무 궁합과 시너지'를 유쾌한 사내 도사 컨셉으로 분석해줘.
-    1. 🌟 팀 종합 케미: (어떤 분위기의 팀인지)
-    2. ⚖️ 밸런스와 역할: (누가 윤활유 역할을 하고, 누가 돌격대장인지 등 재미있는 역할 부여)
-    3. 🚀 도사의 조언: (팀 시너지 극대화를 위한 팁이나 추천 회식 메뉴 등)`;
+    1. 🌟 팀 종합 케미
+    2. ⚖️ 밸런스와 역할
+    3. 🚀 도사의 조언`;
 
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch(WORKER_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{
-            role: 'system',
-            content: '너는 IT 회사의 사내 전속 용한 도사(사주 전문가)야.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.9
+        type: 'team',
+        payload: {
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: '너는 IT 회사의 사내 전속 용한 도사(사주 전문가)야.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.9
+        }
       })
     });
-
+    
     if (!res.ok) throw new Error("팀 궁합을 분석하는 중 에러가 발생했습니다.");
     const json = await res.json();
     return json.choices[0].message.content;
   }
-
-
-
 
 };
