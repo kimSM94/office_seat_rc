@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-const { TransformWrapper, TransformComponent } = window.ReactZoomPanPinch || window.ReactZoomPanPinchDefault;
+const { useState } = React;
+const { TransformWrapper, TransformComponent } = window.ReactZoomPanPinch;
 
 export default function MapView({ seatsData, setSelectedSeat }) {
   // SVG 전체 캔버스 크기
@@ -99,3 +99,5 @@ export default function MapView({ seatsData, setSelectedSeat }) {
     </div>
   );
 }
+
+window.MapView = MapView;
