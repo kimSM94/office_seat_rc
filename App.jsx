@@ -5,8 +5,9 @@ const cols = Array.from({ length: 10 }, (_, i) => i + 1);
 const zones = ['개발팀', '디자인팀', '기획팀', '프리랜서존'];
 
 // =====================================================================
-// 🎯 [데이터] RAG 및 화면 렌더링용 좌석 데이터 (JSON 파일 내용 직접 삽입)
+// 이 부분만 App.jsx 맨 밑에 추가해 주세요! (원래 코드 건드리지 않음)
 // =====================================================================
+
 const SEAT_DATA = [
   {"id": "1224", "name": "강수정", "team": "상담", "x": 10, "y": 300},
   {"id": "1609", "name": "김동혁", "team": "상담", "x": 10, "y": 400},
@@ -36,7 +37,8 @@ const SEAT_DATA = [
   {"id": "1811", "name": "유지원", "team": "모바일", "x": 850, "y": 400}
 ];
 
-function MapView({ seatsData, setSelectedSeat }) {
+function MapView({ setSelectedSeat }) {
+  const { useState } = React;
   const MAP_WIDTH = 1000;
   const MAP_HEIGHT = 1000;
   const [scale, setScale] = useState(0.8);
@@ -47,8 +49,7 @@ function MapView({ seatsData, setSelectedSeat }) {
   const handleWheel = (e) => {
     e.preventDefault(); 
     const scaleAdjust = e.deltaY * -0.001;
-    const newScale = Math.min(Math.max(0.3, scale + scaleAdjust), 3);
-    setScale(newScale);
+    setScale(Math.min(Math.max(0.3, scale + scaleAdjust), 3));
   };
 
   const handleMouseDown = (e) => {
@@ -73,37 +74,28 @@ function MapView({ seatsData, setSelectedSeat }) {
   };
 
   return (
-    <div className="w-full h-[80vh] bg-gray-900 overflow-hidden relative rounded-xl border border-gray-700"
-         onWheel={handleWheel} onMouseDown={handleMouseDown}
-         onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}
-         onMouseLeave={handleMouseUp} style={{ cursor: isDragging ? 'grabbing' : 'grab' }}>
+    <div style={{ width: '100%', height: '600px', backgroundColor: '#1f2937', position: 'relative', overflow: 'hidden', borderRadius: '10px' }}
+         onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
       
-      <div className="absolute top-4 left-4 z-10 bg-gray-800/80 p-4 rounded-xl border border-gray-700 backdrop-blur">
-        <h3 className="text-white font-bold mb-2">💡 스마트 좌석배치도</h3>
-        <p className="text-sm text-gray-400">마우스 휠: 확대/축소</p>
-        <p className="text-sm text-gray-400">드래그: 화면 이동</p>
+      {/* 컨트롤러 */}
+      <div style={{ position: 'absolute', bottom: '20px', right: '20px', zIndex: 10 }}>
+        <button onClick={() => setScale(s => Math.min(s + 0.2, 3))} style={{ margin: '5px', padding: '10px', cursor: 'pointer' }}>➕ 확대</button>
+        <button onClick={() => setScale(s => Math.max(s - 0.2, 0.3))} style={{ margin: '5px', padding: '10px', cursor: 'pointer' }}>➖ 축소</button>
       </div>
 
-      <div className="absolute bottom-6 right-6 z-10 flex gap-2">
-        <button onClick={() => setScale(s => Math.min(s + 0.2, 3))} className="p-3 bg-gray-800 rounded-full text-white hover:bg-gray-700">+</button>
-        <button onClick={() => setScale(s => Math.max(s - 0.2, 0.3))} className="p-3 bg-gray-800 rounded-full text-white hover:bg-gray-700">-</button>
-        <button onClick={() => { setScale(0.8); setPos({x: 0, y: 0}); }} className="p-3 bg-purple-600 rounded-full text-white hover:bg-purple-500">초기화</button>
-      </div>
-
-      <div className="w-full h-full flex items-center justify-center"
-           style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`, transition: isDragging ? 'none' : 'transform 0.1s ease-out' }}>
-        <svg width={MAP_WIDTH} height={MAP_HEIGHT} className="bg-gray-800 rounded-3xl shadow-2xl">
-          <rect x="50" y="50" width="900" height="100" fill="#374151" rx="10" />
+      {/* 지도 캔버스 */}
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`, transition: isDragging ? 'none' : 'transform 0.1s ease-out' }}>
+        <svg width={MAP_WIDTH} height={MAP_HEIGHT} style={{ backgroundColor: '#374151', borderRadius: '20px' }}>
+          <rect x="50" y="50" width="900" height="100" fill="#4B5563" rx="10" />
           <text x="500" y="105" fill="#9CA3AF" fontSize="24" fontWeight="bold" textAnchor="middle">E/V 및 엘리베이터 홀</text>
           
-          {seatsData.map((seat) => (
-            <g key={seat.id} transform={`translate(${seat.x}, ${seat.y})`}
-               onClick={(e) => { e.stopPropagation(); setSelectedSeat(seat); }}
-               className="cursor-pointer hover:opacity-80 transition-opacity">
-              <rect width="45" height="65" fill={getTeamColor(seat.team)} rx="4" stroke="#4B5563" />
-              <text x="22.5" y="15" fill="#1F2937" fontSize="10" fontWeight="bold" textAnchor="middle">{seat.team}</text>
-              <text x="22.5" y="32" fill="#111827" fontSize="12" fontWeight="900" textAnchor="middle">{seat.name}</text>
-              {scale > 1.2 && <text x="22.5" y="50" fill="#4B5563" fontSize="11" fontWeight="bold" textAnchor="middle">{seat.id}</text>}
+          {SEAT_DATA.map((seat) => (
+            <g key={seat.id} transform={`translate(${seat.x}, ${seat.y})`} style={{ cursor: 'pointer' }}
+               onClick={(e) => { e.stopPropagation(); setSelectedSeat(seat); }}>
+              <rect width="45" height="65" fill={getTeamColor(seat.team)} rx="4" stroke="#111827" />
+              <text x="22.5" y="15" fill="#111827" fontSize="10" fontWeight="bold" textAnchor="middle">{seat.team}</text>
+              <text x="22.5" y="32" fill="#000" fontSize="12" fontWeight="bold" textAnchor="middle">{seat.name}</text>
+              {scale > 1.2 && <text x="22.5" y="50" fill="#374151" fontSize="11" fontWeight="bold" textAnchor="middle">{seat.id}</text>}
             </g>
           ))}
         </svg>
@@ -116,120 +108,182 @@ function MapView({ seatsData, setSelectedSeat }) {
 // 1. 메인 App 컴포넌트
 // ==========================================
 function App() {
-  // 상태 관리
   const [user, setUser] = useState(null); 
   const [view, setView] = useState('home'); 
+  const [seats, setSeats] = useState({});
   const [selectedSeat, setSelectedSeat] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [customMessage, setCustomMessage] = useState('');
+  const [secondBrainData, setSecondBrainData] = useState({ focus: '', todos: '', links: '' });
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [highlightedSeatId, setHighlightedSeatId] = useState(null);
+  const [recommendedSeats, setRecommendedSeats] = useState([]); 
+  const [aiMessage, setAiMessage] = useState('궁금한 담당자를 찾거나, 빈자리 배치를 요청해보세요!');
 
-  // 1시간 로그인 유지 로직 (이전에 만드신 코드!)
+// 1. [추가] 초기 로드 시 세션 확인 (새로고침 대응)
   useEffect(() => {
     const savedSession = localStorage.getItem('office_user_session');
+    
     if (savedSession) {
       const { userData, expiry } = JSON.parse(savedSession);
+      
+      // 현재 시간이 만료 시간보다 이전이면 로그인 유지
       if (Date.now() < expiry) {
         setUser(userData);
       } else {
+        // 1시간이 지났으면 세션 삭제
         localStorage.removeItem('office_user_session');
+        alert("세션이 만료되어 다시 로그인해주세요.");
       }
     }
-    setIsLoading(false);
+    setIsLoading(false); // 세션 확인 후 로딩 해제
   }, []);
 
-  // 로그인 성공 처리 함수
+  // 2. [수정] 로그인 성공 시 호출되는 함수 (만료 시간 설정)
   const handleLoginSuccess = (userData) => {
-    const ONE_HOUR = 60 * 60 * 1000;
-    const sessionData = { userData, expiry: Date.now() + ONE_HOUR };
+    const ONE_HOUR = 60 * 60 * 1000; // 1시간을 밀리초로 계산
+    const sessionData = {
+      userData: userData,
+      expiry: Date.now() + ONE_HOUR // 현재 시간 + 1시간
+    };
+    
+    // 브라우저 저장소에 저장
     localStorage.setItem('office_user_session', JSON.stringify(sessionData));
     setUser(userData);
   };
 
-  // 로딩 중이거나 로그인이 안 되어있을 때
-  if (isLoading) return <div className="text-white text-center p-10">로딩중...</div>;
+  // 3. [추가] 로그아웃 기능 (필요할 때 사용)
+  const handleLogout = () => {
+    localStorage.removeItem('office_user_session');
+    setUser(null);
+    window.location.reload(); // 깔끔하게 새로고침
+  };
+
+  // 4. 데이터 로드 로직 (기존 useEffect 수정)
+  useEffect(() => {
+    if (!user) return; 
+
+    const loadInitialData = async () => {
+      try {
+        // 여기서는 이미 isLoading이 위에서 관리되므로 데이터 로드 로직만 수행
+        const data = await window.api.fetchSeats();
+        const seatsObj = {};
+        data.forEach(seat => { seatsObj[seat.id] = seat; });
+        setSeats(seatsObj);
+      } catch (error) {
+        console.error('데이터 로드 실패:', error);
+      }
+    };
+    loadInitialData();
+
+    const subscription = window.api.subscribeToSeats((newSeatData) => {
+      setSeats(prev => ({ ...prev, [newSeatData.id]: newSeatData }));
+    });
+
+    return () => { 
+      if (window.supabase && subscription) {
+        window.supabase.removeChannel(subscription); 
+      }
+    };
+  }, [user]);
+
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      const stringifiedBrain = JSON.stringify(secondBrainData);
+      await window.api.updateStatusWithMessage(id, newStatus, customMessage, stringifiedBrain);
+      setSelectedSeat(null);
+    } catch (error) {
+      alert('상태 업데이트에 실패했습니다.');
+    }
+  };
+
   
-  // 💡 기존에 만드신 AuthView 컴포넌트가 있다면 아래에 연결됩니다.
-  // (임시 로그인 화면 처리)
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
-        <div className="bg-gray-800 p-8 rounded-xl text-center">
-          <h2 className="text-2xl font-bold mb-4">신한DS 스마트오피스</h2>
-          <button 
-            onClick={() => handleLoginSuccess({ name: '관리자', id: 'admin' })}
-            className="bg-blue-600 px-6 py-2 rounded-lg font-bold hover:bg-blue-500"
-          >
-            임시 테스트 로그인
-          </button>
-        </div>
-      </div>
-    );
-  }
 
-  // 로그인 완료 후 메인 화면
+  const handleAISearch = async () => { /* 기존 로직 동일 */ };
+  const handleAIRecommend = async () => { /* 기존 로직 동일 */ };
+
+  if (!user) return <AuthView onLoginSuccess={handleLoginSuccess} />;
+  if (isLoading) return <div className="h-screen w-full bg-gray-900 flex items-center justify-center text-white font-bold">오피스 데이터 동기화 중...</div>;
+
+  const isMySeat = selectedSeat?.name === user.name;
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-      {/* 상단 네비게이션 바 */}
-      <header className="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-          신한DS 스마트오피스 🚀
-        </h1>
-        <div className="flex gap-4 items-center">
-          <button onClick={() => setView('home')} className={`px-4 py-2 rounded-lg font-bold ${view === 'home' ? 'bg-gray-700' : 'text-gray-400'}`}>홈</button>
-          <button onClick={() => setView('map')} className={`px-4 py-2 rounded-lg font-bold ${view === 'map' ? 'bg-purple-600' : 'text-gray-400'}`}>지도 보기</button>
-          <span className="ml-4 text-sm bg-gray-700 px-3 py-1 rounded-full">{user.name}님 환영합니다</span>
-          <button onClick={() => { localStorage.clear(); window.location.reload(); }} className="text-sm text-red-400 hover:text-red-300">로그아웃</button>
-        </div>
-      </header>
+    <div className="h-full flex flex-col relative bg-gray-900 text-white">
+      {view === 'home' && <Home setView={setView} user={user} seats={seats} />}
+      {view === 'map' && <MapView setView={setView} rows={rows} cols={cols} seats={seats} setSelectedSeat={setSelectedSeat} searchQuery={searchQuery} setSearchQuery={setSearchQuery} handleAISearch={handleAISearch} handleAIRecommend={handleAIRecommend} isSearching={isSearching} aiMessage={aiMessage} highlightedSeatId={highlightedSeatId} recommendedSeats={recommendedSeats} />}
+      {view === 'admin' && <AdminView setView={setView} seats={seats} />}
+      {view === 'zone' && <ZoneView setView={setView} seats={seats} setSelectedSeat={setSelectedSeat} zones={zones} />}
 
-      {/* 메인 콘텐츠 영역 */}
-      <main className="flex-1 p-6 flex flex-col">
-        {view === 'home' && (
-          <div className="flex flex-col items-center justify-center h-full">
-            <h2 className="text-3xl font-bold mb-6">스마트 오피스에 오신 것을 환영합니다!</h2>
-            <div className="flex gap-6">
-              <button onClick={() => setView('map')} className="bg-gradient-to-r from-purple-600 to-blue-500 p-8 rounded-2xl shadow-lg hover:scale-105 transition-transform">
-                <span className="text-4xl block mb-4">🗺️</span>
-                <h3 className="text-xl font-bold">좌석 배치도 보기</h3>
-              </button>
-              
-              {/* 💡 여기에 기존에 만드신 맛집 탐험대(Kakao API) 버튼을 넣으시면 됩니다! */}
-              <button className="bg-gradient-to-r from-orange-500 to-yellow-500 p-8 rounded-2xl shadow-lg hover:scale-105 transition-transform"
-                      onClick={() => alert("맛집 추천 기능은 기존 코드를 연동해주세요!")}>
-                <span className="text-4xl block mb-4">🍱</span>
-                <h3 className="text-xl font-bold">AI 맛집 탐험대</h3>
-              </button>
+      {/* 🪑 좌석 상세 및 세컨드 브레인 모달 */}
+      {selectedSeat && (
+        <div className="absolute inset-0 bg-black/80 flex items-end z-50 animate-in fade-in">
+          <div className="w-full bg-gray-900 border-t border-gray-700 p-6 rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-2xl font-black flex items-center gap-2">
+                  {selectedSeat.name || '공석'} 
+                  {selectedSeat.status && selectedSeat.status !== '공석' && (
+                    <span className="text-xs bg-gray-800 px-2 py-1 rounded-full text-blue-400 font-normal border border-gray-700">
+                      {selectedSeat.status}
+                    </span>
+                  )}
+                </h3>
+                <p className="text-gray-500 mt-1">{selectedSeat.id}석 · {selectedSeat.zone || '미지정 구역'}</p>
+                {selectedSeat.status_message && (
+                  <p className="text-sm font-bold text-yellow-400 mt-2 p-3 bg-yellow-400/10 rounded-xl inline-block border border-yellow-400/20">
+                    💬 {selectedSeat.status_message}
+                  </p>
+                )}
+              </div>
+              <button onClick={() => setSelectedSeat(null)} className="text-2xl text-gray-500 hover:text-white p-2 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center">✕</button>
             </div>
-          </div>
-        )}
+            
+            <div className="space-y-4">
+              {selectedSeat.status === '공석' && (
+                <button onClick={async () => { await window.api.createRequest(selectedSeat.id, user.name); alert(`이동 요청 전송 완료!`); setSelectedSeat(null); }} className="w-full p-4 bg-purple-600 hover:bg-purple-700 rounded-xl font-bold text-lg shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all mb-4">
+                  📬 이 자리로 이동 요청하기 ({user.name})
+                </button>
+              )}
 
-        {view === 'map' && (
-          <div className="flex gap-6 h-full">
-            {/* 좌석배치도 렌더링 (데이터 전달) */}
-            <div className="flex-1">
-              <MapView seatsData={SEAT_DATA} setSelectedSeat={setSelectedSeat} />
-            </div>
-
-            {/* 우측 사이드바: 선택된 좌석 정보 */}
-            <div className="w-80 bg-gray-800 rounded-xl p-6 border border-gray-700">
-              <h3 className="text-lg font-bold mb-4 border-b border-gray-700 pb-2">좌석 정보</h3>
-              {selectedSeat ? (
-                <div>
-                  <div className="flex items-center justify-center w-20 h-20 bg-gray-700 rounded-full mb-4 mx-auto text-3xl">🧑‍💻</div>
-                  <p className="text-center text-xl font-bold mb-1">{selectedSeat.name}</p>
-                  <p className="text-center text-blue-400 font-bold mb-6">{selectedSeat.team} 파트</p>
-                  
-                  <div className="bg-gray-900 rounded-lg p-4 space-y-3 text-sm">
-                    <div className="flex justify-between"><span className="text-gray-400">내선번호</span><span>{selectedSeat.id}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">현재 상태</span><span className="text-green-400">● 근무중</span></div>
-                  </div>
+              {selectedSeat.status !== '공석' && (
+                <div className="bg-gray-800/60 p-5 rounded-2xl border border-gray-700 mb-6 shadow-inner">
+                  <h4 className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-4 flex items-center gap-2">
+                    🧠 {selectedSeat.name}의 Second Brain
+                  </h4>
+                  {isMySeat ? (
+                    <div className="space-y-4">
+                      <div><label className="text-xs font-bold text-gray-400 mb-1 block">🎯 오늘의 핵심 포커스</label><input type="text" className="w-full p-3 bg-gray-900 rounded-xl border border-gray-700 text-sm text-white focus:border-blue-500 focus:outline-none placeholder-gray-600" value={secondBrainData.focus} onChange={(e) => setSecondBrainData({...secondBrainData, focus: e.target.value})} /></div>
+                      <div><label className="text-xs font-bold text-gray-400 mb-1 block">✅ 투두 리스트 (쉼표로 구분)</label><input type="text" className="w-full p-3 bg-gray-900 rounded-xl border border-gray-700 text-sm text-white focus:border-blue-500 focus:outline-none placeholder-gray-600" value={secondBrainData.todos} onChange={(e) => setSecondBrainData({...secondBrainData, todos: e.target.value})} /></div>
+                      <div><label className="text-xs font-bold text-gray-400 mb-1 block">🔗 주요 프로젝트 링크</label><input type="text" className="w-full p-3 bg-gray-900 rounded-xl border border-gray-700 text-sm text-blue-400 focus:border-blue-500 focus:outline-none placeholder-gray-600" value={secondBrainData.links} onChange={(e) => setSecondBrainData({...secondBrainData, links: e.target.value})} /></div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {secondBrainData.focus && (<div><span className="text-xs text-gray-500 font-bold block mb-1">🎯 오늘의 포커스</span><p className="text-sm text-white font-medium bg-gray-900 p-3 rounded-xl border border-gray-700">{secondBrainData.focus}</p></div>)}
+                      {secondBrainData.todos && (<div><span className="text-xs text-gray-500 font-bold block mb-2">✅ 투두 리스트</span><div className="space-y-2 bg-gray-900 p-3 rounded-xl border border-gray-700">{secondBrainData.todos.split(',').map((todo, idx) => (<div key={idx} className="flex items-center gap-2 text-sm text-gray-300"><div className="w-4 h-4 rounded border border-gray-600 flex-shrink-0"></div><span>{todo.trim()}</span></div>))}</div></div>)}
+                      {secondBrainData.links && (<div><span className="text-xs text-gray-500 font-bold block mb-1">🔗 프로젝트 링크</span><a href={secondBrainData.links.startsWith('http') ? secondBrainData.links : `https://${secondBrainData.links}`} target="_blank" rel="noreferrer" className="text-sm text-blue-400 hover:text-blue-300 underline block bg-gray-900 p-3 rounded-xl border border-gray-700 break-all">{secondBrainData.links}</a></div>)}
+                      {!secondBrainData.focus && !secondBrainData.todos && !secondBrainData.links && (<p className="text-sm text-gray-500 text-center py-4">아직 등록된 업무 정보가 없습니다.</p>)}
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="text-center text-gray-500 mt-10">지도를 클릭하여<br/>좌석 정보를 확인하세요.</div>
+              )}
+
+              {selectedSeat.status !== '공석' && (
+                <>
+                  <div className="mb-4"><input type="text" placeholder="현재 상태 메시지 (예: 15시까지 미팅)" className="w-full p-3 bg-gray-800 rounded-xl border border-gray-700 text-sm focus:border-blue-500 focus:outline-none" value={customMessage} onChange={(e) => setCustomMessage(e.target.value)} /></div>
+                  <div className="grid grid-cols-3 gap-2 pb-4">
+                    <button onClick={() => handleStatusChange(selectedSeat.id, '근무중')} className="p-3 bg-gray-800 rounded-xl font-bold text-sm hover:border-green-500 border border-gray-700 transition-colors">🟢 근무중</button>
+                    <button onClick={() => handleStatusChange(selectedSeat.id, '자리비움')} className="p-3 bg-gray-800 rounded-xl font-bold text-sm hover:border-yellow-500 border border-gray-700 transition-colors">🟡 자리비움</button>
+                    <button onClick={() => handleStatusChange(selectedSeat.id, '휴가')} className="p-3 bg-gray-800 rounded-xl font-bold text-sm hover:border-red-500 border border-gray-700 transition-colors">🔴 휴가</button>
+                  </div>
+                </>
               )}
             </div>
           </div>
-        )}
-      </main>
+        </div>
+      )}
     </div>
   );
 }
