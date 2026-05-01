@@ -50,65 +50,133 @@ const SEAT_DATA = [
   {id: "8782", name: "김현진", team: "디스커버", x: 1060, y: 110}, {id: "1793", name: "전진", team: "디스커버", x: 1130, y: 110}, {id: "8713", name: "이동표", team: "디스커버", x: 1220, y: 110}, {id: "8190", name: "장진역", team: "디스커버", x: 1290, y: 110}, {id: "8168", name: "신재준", team: "디스커버", x: 1360, y: 110}
 ];
 
+// (위쪽에 SEAT_DATA 배열은 그대로 두세요!)
+
 function MapView({ setSelectedSeat }) {
-  const { useState } = React;
-  const MAP_WIDTH = 1000;
-  const MAP_HEIGHT = 1000;
-  const [scale, setScale] = useState(0.8);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const { useState, useRef, useEffect } = React;
+  
+  const MAP_WIDTH = 1600;
+  const MAP_HEIGHT = 900;
+  
+  const [scale, setScale] = useState(1);
+  const [pos, setPos] = useState({ x: 0, y: 0 }); 
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  
+  const containerRef = useRef(null);
 
-  const handleWheel = (e) => {
-    e.preventDefault(); 
-    const scaleAdjust = e.deltaY * -0.001;
-    setScale(Math.min(Math.max(0.3, scale + scaleAdjust), 3));
-  };
+  // 🚨 화면 크기에 맞춰 '가로로 눕힌 상태'로 꽉 채우는 계산식
+  useEffect(() => {
+    const fitMap = () => {
+      if (!containerRef.current) return;
+      
+      const { clientWidth, clientHeight } = containerRef.current;
+      
+      // 무조건 90도 눕히므로, 화면 가로에는 지도의 세로(900)를, 화면 세로에는 지도의 가로(1600)를 맞춥니다.
+      const scaleX = clientWidth / MAP_HEIGHT; 
+      const scaleY = clientHeight / MAP_WIDTH; 
 
-  const handleMouseDown = (e) => {
+      // 화면을 꽉 채우도록 98% 비율로 스케일 조정 (남색 네모 박스 갇힘 현상 해결!)
+      setScale(Math.min(scaleX, scaleY) * 0.98);
+      setPos({ x: 0, y: 0 }); 
+    };
+
+    fitMap(); 
+    window.addEventListener('resize', fitMap); 
+    return () => window.removeEventListener('resize', fitMap);
+  }, []);
+
+  // 휠 확대/축소 로직
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+    const handleWheel = (e) => {
+      e.preventDefault(); 
+      const scaleAdjust = e.deltaY * -0.001;
+      setScale(prev => Math.min(Math.max(0.1, prev + scaleAdjust), 3));
+    };
+    element.addEventListener('wheel', handleWheel, { passive: false });
+    return () => element.removeEventListener('wheel', handleWheel);
+  }, []);
+
+  const startDrag = (e) => {
     setIsDragging(true);
-    setStartPos({ x: e.clientX - pos.x, y: e.clientY - pos.y });
+    const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+    const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+    setStartPos({ x: clientX - pos.x, y: clientY - pos.y });
   };
 
-  const handleMouseMove = (e) => {
+  const onDrag = (e) => {
     if (!isDragging) return;
-    setPos({ x: e.clientX - startPos.x, y: e.clientY - startPos.y });
+    const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+    const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+    setPos({ x: clientX - startPos.x, y: clientY - startPos.y });
   };
 
-  const handleMouseUp = () => setIsDragging(false);
+  const endDrag = () => setIsDragging(false);
 
   const getTeamColor = (team) => {
-    if (team === '상담') return '#FEF08A';
-    if (team === '오토') return '#D9F99D';
-    if (team === '재무') return '#BBF7D0';
-    if (team === '모바일') return '#FDE047';
-    if (team === '솔포인트') return '#A7F3D0';
+    if (team === '상담' || team === '팀장') return '#FDE047'; 
+    if (team.includes('오토') || team === 'SSO') return '#D9F99D'; 
+    if (team === '솔포인트' || team === '발급') return '#86EFAC'; 
+    if (team === '재무') return '#BEF264'; 
+    if (team === '홈페이지' || team.includes('개발전담') || team === '올댓' || team === '전자문서') return '#A3E635'; 
+    if (team.includes('마이카') || team === '데이타비즈') return '#84CC16'; 
+    if (team.includes('모바일') || team.includes('디스커버')) return '#FCD34D'; 
     return '#E5E7EB'; 
   };
 
   return (
-    <div style={{ width: '100%', height: '600px', backgroundColor: '#1f2937', position: 'relative', overflow: 'hidden', borderRadius: '10px' }}
-         onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+    <div 
+      ref={containerRef}
+      // 💡 화면 전체(flex-1)를 차지하도록 스타일 수정 (상단 메뉴 제외한 모든 영역 100% 사용)
+      className="w-full flex-1 bg-gray-900 relative overflow-hidden flex items-center justify-center border-t border-gray-800"
+      onMouseDown={startDrag} onMouseMove={onDrag} onMouseUp={endDrag} onMouseLeave={endDrag}
+      onTouchStart={startDrag} onTouchMove={onDrag} onTouchEnd={endDrag}
+      style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+    >
       
-      {/* 컨트롤러 */}
-      <div style={{ position: 'absolute', bottom: '20px', right: '20px', zIndex: 10 }}>
-        <button onClick={() => setScale(s => Math.min(s + 0.2, 3))} style={{ margin: '5px', padding: '10px', cursor: 'pointer' }}>➕ 확대</button>
-        <button onClick={() => setScale(s => Math.max(s - 0.2, 0.3))} style={{ margin: '5px', padding: '10px', cursor: 'pointer' }}>➖ 축소</button>
+      {/* 💡 거추장스러운 버튼들 모두 삭제, 안내바만 왼쪽 아래에 작게 배치 */}
+      <div className="absolute bottom-4 left-4 z-10 bg-gray-800/80 p-2 rounded-lg pointer-events-none">
+        <p className="text-xs text-gray-400 font-bold">15층 개발팀 전체도면</p>
       </div>
 
-      {/* 지도 캔버스 */}
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`, transition: isDragging ? 'none' : 'transform 0.1s ease-out' }}>
-        <svg width={MAP_WIDTH} height={MAP_HEIGHT} style={{ backgroundColor: '#374151', borderRadius: '20px' }}>
-          <rect x="50" y="50" width="900" height="100" fill="#4B5563" rx="10" />
-          <text x="500" y="105" fill="#9CA3AF" fontSize="24" fontWeight="bold" textAnchor="middle">E/V 및 엘리베이터 홀</text>
+      <div 
+        style={{ 
+          width: MAP_WIDTH, height: MAP_HEIGHT,
+          // 💡 무조건 90도 돌아가 있도록 고정!
+          transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale}) rotate(90deg)`, 
+          transformOrigin: 'center center',
+          transition: isDragging ? 'none' : 'transform 0.15s ease-out' 
+        }}
+        className="flex items-center justify-center absolute top-1/2 left-1/2"
+        style={{
+          width: MAP_WIDTH, height: MAP_HEIGHT,
+          marginLeft: -MAP_WIDTH / 2, marginTop: -MAP_HEIGHT / 2,
+          transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale}) rotate(90deg)`, 
+          transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+        }}
+      >
+        {/* 💡 안쪽 남색 배경(bg-[#2D3748])과 테두리 삭제 -> 검은 화면 전체에 스며들도록 수정 */}
+        <svg viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} width="100%" height="100%">
+          <rect x="50" y="100" width="900" height="80" fill="#374151" rx="8" />
+          <text x="500" y="145" fill="#9CA3AF" fontSize="28" fontWeight="900" textAnchor="middle">E/V (엘리베이터)</text>
           
           {SEAT_DATA.map((seat) => (
-            <g key={seat.id} transform={`translate(${seat.x}, ${seat.y})`} style={{ cursor: 'pointer' }}
-               onClick={(e) => { e.stopPropagation(); setSelectedSeat(seat); }}>
-              <rect width="45" height="65" fill={getTeamColor(seat.team)} rx="4" stroke="#111827" />
-              <text x="22.5" y="15" fill="#111827" fontSize="10" fontWeight="bold" textAnchor="middle">{seat.team}</text>
-              <text x="22.5" y="32" fill="#000" fontSize="12" fontWeight="bold" textAnchor="middle">{seat.name}</text>
-              {scale > 1.2 && <text x="22.5" y="50" fill="#374151" fontSize="11" fontWeight="bold" textAnchor="middle">{seat.id}</text>}
+            <g 
+              key={seat.id} transform={`translate(${seat.x}, ${seat.y})`} style={{ cursor: 'pointer' }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setSelectedSeat(seat);
+                alert(`[${seat.team}] ${seat.name} - 내선: ${seat.id}`);
+              }}
+            >
+              <rect width="60" height="80" fill={getTeamColor(seat.team)} rx="4" stroke="#111827" strokeWidth="1.5" />
+              <text x="30" y="22" fill="#111827" fontSize="12" fontWeight="800" textAnchor="middle">{seat.team}</text>
+              <text x="30" y="45" fill="#000" fontSize="16" fontWeight="900" textAnchor="middle">{seat.name}</text>
+              
+              {/* 축소 시에도 내선번호가 잘 보이도록 제한 완화 */}
+              {scale > 0.15 && <text x="30" y="68" fill="#4B5563" fontSize="13" fontWeight="900" textAnchor="middle">{seat.id}</text>}
             </g>
           ))}
         </svg>
