@@ -49,36 +49,74 @@ const SEAT_DATA = [
   {id: "8727", name: "김재용", team: "디스커버", x: 1060, y: 20}, {id: "8729", name: "정상은", team: "디스커버", x: 1130, y: 20}, {id: "8712", name: "김찬연", team: "디스커버", x: 1220, y: 20}, {id: "7167", name: "남주석", team: "디스커버", x: 1290, y: 20},
   {id: "8782", name: "김현진", team: "디스커버", x: 1060, y: 110}, {id: "1793", name: "전진", team: "디스커버", x: 1130, y: 110}, {id: "8713", name: "이동표", team: "디스커버", x: 1220, y: 110}, {id: "8190", name: "장진역", team: "디스커버", x: 1290, y: 110}, {id: "8168", name: "신재준", team: "디스커버", x: 1360, y: 110}
 ];
-
-// (위쪽에 SEAT_DATA 배열은 그대로 두세요!)
-
-function MapView({ setSelectedSeat }) {
+// App.jsx 파일 안에 있는 MapView 함수를 이걸로 통째로 교체하세요!
+function MapView({ 
+  setView, seats, setSelectedSeat, 
+  searchQuery, setSearchQuery, 
+  highlightedSeatId, recommendedSeats 
+}) {
   const { useState, useRef, useEffect } = React;
   
-  const MAP_WIDTH = 1600;
-  const MAP_HEIGHT = 900;
+  const SEAT_DATA = [
+    {id: "1224", name: "강수정", team: "상담", x: 50, y: 250}, {id: "1609", name: "김동혁", team: "상담", x: 50, y: 340}, {id: "1369", name: "강선희", team: "운영혁신", x: 50, y: 430}, {id: "1413", name: "김범", team: "운영혁신", x: 50, y: 520}, {id: "1479", name: "이동은", team: "기획", x: 50, y: 680}, {id: "1401", name: "서성훈", team: "팀장", x: 50, y: 770},
+    {id: "Test", name: "Test실", team: "공용", x: -20, y: 680}, {id: "1475", name: "서강석", team: "본부장", x: -20, y: 770},
+    {id: "1483", name: "김기훈", team: "상담", x: 120, y: 250}, {id: "1285", name: "이소연", team: "상담", x: 120, y: 340}, {id: "1788", name: "장병용", team: "상담", x: 120, y: 430}, {id: "1712", name: "장성호", team: "솔포인트", x: 120, y: 520}, {id: "1137", name: "박남호", team: "솔포인트", x: 120, y: 610}, {id: "8892", name: "김연섭", team: "솔포인트", x: 120, y: 700},
+    {id: "1485", name: "이장규", team: "상담", x: 190, y: 250}, {id: "1797", name: "김지연", team: "상담", x: 190, y: 340}, {id: "1364", name: "김윤호", team: "상담", x: 190, y: 520}, {id: "8625", name: "이채연", team: "상담", x: 190, y: 610}, {id: "1280", name: "조경훈", team: "상담", x: 190, y: 700},
+    {id: "1437", name: "김영필", team: "오토", x: 280, y: 250}, {id: "1448", name: "김세희", team: "오토", x: 280, y: 340}, {id: "1978", name: "김예련", team: "오토", x: 280, y: 430}, {id: "1880", name: "박지건", team: "오토", x: 280, y: 520}, {id: "1489", name: "남진아", team: "오토", x: 280, y: 610}, {id: "1461", name: "조용진", team: "오토", x: 280, y: 700}, {id: "1979", name: "정진삼", team: "오토", x: 280, y: 790},
+    {id: "1814", name: "윤호영", team: "오토", x: 350, y: 250}, {id: "1741", name: "김선혜", team: "오토", x: 350, y: 340}, {id: "1642", name: "김준석", team: "오토", x: 350, y: 430}, {id: "1464", name: "이성학", team: "오토", x: 350, y: 520}, {id: "1288", name: "김보령", team: "오토", x: 350, y: 610}, {id: "1442", name: "박용탁", team: "오토", x: 350, y: 700}, {id: "1753", name: "김종현", team: "오토", x: 350, y: 790},
+    {id: "1480", name: "조성민", team: "오토", x: 420, y: 250}, {id: "8680", name: "표동수", team: "오토", x: 420, y: 340}, {id: "1465", name: "김연석", team: "오토", x: 420, y: 430}, {id: "1317", name: "박대윤", team: "오토", x: 420, y: 520}, {id: "1825", name: "정보람", team: "오토", x: 420, y: 610}, {id: "1537", name: "길연우", team: "오토", x: 420, y: 700}, {id: "1255", name: "김성훈", team: "SSO", x: 420, y: 790},
+    {id: "1351", name: "이하나", team: "재무", x: 490, y: 250}, {id: "1803", name: "심혜진", team: "재무", x: 490, y: 340}, {id: "1414", name: "김동주", team: "재무", x: 490, y: 430}, {id: "1375", name: "김우철", team: "재무", x: 490, y: 520}, {id: "1726", name: "김경원", team: "발급", x: 490, y: 610}, {id: "1139", name: "권두연", team: "발급", x: 490, y: 700}, {id: "OA", name: "기동OA", team: "공용", x: 490, y: 790},
+    {id: "1669", name: "길원규", team: "재무", x: 580, y: 250}, {id: "1380", name: "이현지", team: "재무", x: 580, y: 340}, {id: "1417", name: "정재은", team: "재무", x: 580, y: 430}, {id: "1446", name: "박미연", team: "마이카", x: 580, y: 610}, {id: "1266", name: "김연하", team: "마이카", x: 580, y: 700}, {id: "1331", name: "노지은", team: "개발전담", x: 580, y: 790},
+    {id: "1258", name: "신동엽", team: "홈페이지", x: 650, y: 250}, {id: "8686", name: "김성우", team: "홈페이지", x: 650, y: 340}, {id: "8048", name: "유명석", team: "홈페이지", x: 650, y: 430}, {id: "1188", name: "방성원", team: "개발전담", x: 650, y: 520}, {id: "1942", name: "변상현", team: "마이카", x: 650, y: 610}, {id: "1878", name: "임형진", team: "마이카", x: 650, y: 700}, {id: "1988", name: "임영정", team: "마이카", x: 650, y: 790},
+    {id: "1268", name: "정강호", team: "홈페이지", x: 740, y: 250}, {id: "1945", name: "박종원", team: "홈페이지", x: 740, y: 340}, {id: "1366", name: "이동현", team: "전자문서", x: 740, y: 430}, {id: "1773", name: "정희종", team: "전자문서", x: 740, y: 520}, {id: "8658", name: "함덕훈", team: "홈페이지", x: 740, y: 610}, {id: "8687", name: "이선아", team: "홈페이지", x: 740, y: 700}, {id: "1778", name: "이연경", team: "홈페이지", x: 740, y: 790},
+    {id: "1943", name: "김찬수", team: "개발전담", x: 810, y: 250}, {id: "1865", name: "강규동", team: "개발전담", x: 810, y: 340}, {id: "8886", name: "이민호", team: "올댓", x: 810, y: 430}, {id: "8885", name: "강용선", team: "올댓", x: 810, y: 520}, {id: "8884", name: "박은혜", team: "올댓", x: 810, y: 610}, {id: "1138", name: "임진철", team: "홈페이지", x: 810, y: 700}, {id: "8883", name: "명보민", team: "올댓", x: 810, y: 790},
+    {id: "1870", name: "최민선", team: "개발전담", x: 900, y: 250}, {id: "1947", name: "유현규", team: "개발전담", x: 900, y: 340}, {id: "1842", name: "박재환", team: "홈페이지", x: 900, y: 430}, {id: "1394", name: "김혜경", team: "홈페이지", x: 900, y: 520}, {id: "1443", name: "이영주", team: "홈페이지", x: 900, y: 610}, {id: "7499", name: "최호영", team: "홈페이지", x: 900, y: 700}, {id: "1333", name: "신정은", team: "홈페이지", x: 900, y: 790},
+    {id: "1001", name: "최현철", team: "데이타비즈", x: 970, y: 290}, {id: "1863", name: "박다은", team: "개발전담", x: 970, y: 430}, {id: "1946", name: "이샛별", team: "개발전담", x: 970, y: 520}, {id: "8681", name: "이면정", team: "홈페이지", x: 970, y: 610}, {id: "1875", name: "홍지연", team: "홈페이지", x: 970, y: 700}, {id: "1478", name: "배경보", team: "홈페이지", x: 970, y: 790},
+    {id: "1332", name: "이준상", team: "개발전담", x: 1060, y: 430}, {id: "1866", name: "이승민", team: "개발전담", x: 1060, y: 520}, {id: "8181", name: "김용오", team: "홈페이지", x: 1060, y: 610}, {id: "8180", name: "박동영", team: "홈페이지", x: 1060, y: 700}, {id: "8183", name: "이용민", team: "모바일", x: 1060, y: 790},
+    {id: "1955", name: "김은정", team: "모바일", x: 1130, y: 340}, {id: "1131", name: "진은성", team: "모바일", x: 1130, y: 430}, {id: "1869", name: "김도현", team: "모바일", x: 1130, y: 520}, {id: "1476", name: "임영우", team: "모바일", x: 1130, y: 610}, {id: "8144", name: "박증환", team: "모바일", x: 1130, y: 700}, {id: "1132", name: "임지우", team: "모바일", x: 1130, y: 790},
+    {id: "1607", name: "윤학민", team: "모바일", x: 1220, y: 250}, {id: "1841", name: "권예림", team: "모바일", x: 1220, y: 430}, {id: "8016", name: "서은빈", team: "모바일", x: 1220, y: 520}, {id: "8159", name: "김성민", team: "모바일", x: 1220, y: 610}, {id: "8191", name: "김지수", team: "모바일", x: 1220, y: 700}, {id: "8182", name: "임종완", team: "모바일", x: 1220, y: 790},
+    {id: "1316", name: "한민지", team: "모바일", x: 1290, y: 250}, {id: "1315", name: "김지해", team: "모바일", x: 1290, y: 340}, {id: "1811", name: "유지원", team: "모바일", x: 1290, y: 430}, {id: "7547", name: "송효범", team: "모바일", x: 1290, y: 520}, {id: "1810", name: "박재욱", team: "모바일", x: 1290, y: 610}, {id: "8353", name: "승무준", team: "모바일", x: 1290, y: 700}, {id: "8627", name: "김용섭", team: "팀장", x: 1290, y: 790},
+    {id: "8727", name: "김재용", team: "디스커버", x: 1060, y: 20}, {id: "8729", name: "정상은", team: "디스커버", x: 1130, y: 20}, {id: "8712", name: "김찬연", team: "디스커버", x: 1220, y: 20}, {id: "7167", name: "남주석", team: "디스커버", x: 1290, y: 20},
+    {id: "8782", name: "김현진", team: "디스커버", x: 1060, y: 110}, {id: "1793", name: "전진", team: "디스커버", x: 1130, y: 110}, {id: "8713", name: "이동표", team: "디스커버", x: 1220, y: 110}, {id: "8190", name: "장진역", team: "디스커버", x: 1290, y: 110}, {id: "8168", name: "신재준", team: "디스커버", x: 1360, y: 110}
+  ];
+
+  const [viewState, setViewState] = useState({ x: 0, y: 0, scale: 1 });
+  const [center, setCenter] = useState({ x: 0, y: 0 }); 
+  const [isPhone, setIsPhone] = useState(false);
   
-  const [scale, setScale] = useState(1);
-  const [pos, setPos] = useState({ x: 0, y: 0 }); 
+  // 💡 자체 검색 로직을 위한 상태
+  const [localQuery, setLocalQuery] = useState("");
+  const [searchedSeatIds, setSearchedSeatIds] = useState([]);
+
+  // 드래그 및 줌(Pinch) 상태 관리
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const [pinchStart, setPinchStart] = useState({ dist: 0, scale: 1 });
   
   const containerRef = useRef(null);
+  const seatArray = Array.isArray(seats) && seats.length > 0 ? seats : SEAT_DATA;
 
-  // 🚨 화면 크기에 맞춰 '가로로 눕힌 상태'로 꽉 채우는 계산식
+  // 화면 크기 계산
   useEffect(() => {
     const fitMap = () => {
-      if (!containerRef.current) return;
-      
-      const { clientWidth, clientHeight } = containerRef.current;
-      
-      // 무조건 90도 눕히므로, 화면 가로에는 지도의 세로(900)를, 화면 세로에는 지도의 가로(1600)를 맞춥니다.
-      const scaleX = clientWidth / MAP_HEIGHT; 
-      const scaleY = clientHeight / MAP_WIDTH; 
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      setCenter({ x: w / 2, y: h / 2 }); 
 
-      // 화면을 꽉 채우도록 98% 비율로 스케일 조정 (남색 네모 박스 갇힘 현상 해결!)
-      setScale(Math.min(scaleX, scaleY) * 0.98);
-      setPos({ x: 0, y: 0 }); 
+      const phone = h > w;
+      setIsPhone(phone);
+
+      const mapW = 1500;
+      const mapH = 900;
+
+      const scaleX = w / (phone ? mapH : mapW);
+      const scaleY = h / (phone ? mapW : mapH);
+      
+      setViewState({
+        x: 0, 
+        y: phone ? 40 : 0, 
+        scale: Math.min(scaleX, scaleY) * 0.9 
+      });
     };
 
     fitMap(); 
@@ -86,36 +124,83 @@ function MapView({ setSelectedSeat }) {
     return () => window.removeEventListener('resize', fitMap);
   }, []);
 
-  // 휠 확대/축소 로직
+  // 휠 스크롤 줌
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
     const handleWheel = (e) => {
       e.preventDefault(); 
       const scaleAdjust = e.deltaY * -0.001;
-      setScale(prev => Math.min(Math.max(0.1, prev + scaleAdjust), 3));
+      setViewState(prev => ({
+        ...prev,
+        scale: Math.min(Math.max(0.1, prev.scale + scaleAdjust), 4)
+      }));
     };
     element.addEventListener('wheel', handleWheel, { passive: false });
     return () => element.removeEventListener('wheel', handleWheel);
   }, []);
 
-  const startDrag = (e) => {
-    setIsDragging(true);
-    const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-    const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-    setStartPos({ x: clientX - pos.x, y: clientY - pos.y });
+  // 터치 & 드래그 로직
+  const handleStart = (e) => {
+    if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') return;
+    
+    if (e.type === 'touchstart') {
+      if (e.touches.length === 2) {
+        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        setPinchStart({ dist, scale: viewState.scale });
+        setIsDragging(false);
+        return;
+      }
+      setIsDragging(true);
+      setStartPos({ x: e.touches[0].clientX - viewState.x, y: e.touches[0].clientY - viewState.y });
+    } else {
+      setIsDragging(true);
+      setStartPos({ x: e.clientX - viewState.x, y: e.clientY - viewState.y });
+    }
+  };
+  
+  const handleMove = (e) => {
+    if (e.type === 'touchmove') {
+      if (e.touches.length === 2 && pinchStart.dist > 0) {
+        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        const newScale = Math.min(Math.max(0.1, pinchStart.scale * (dist / pinchStart.dist)), 4);
+        setViewState(prev => ({ ...prev, scale: newScale }));
+        return;
+      }
+      if (!isDragging) return;
+      setViewState(prev => ({ ...prev, x: e.touches[0].clientX - startPos.x, y: e.touches[0].clientY - startPos.y }));
+    } else {
+      if (!isDragging) return;
+      setViewState(prev => ({ ...prev, x: e.clientX - startPos.x, y: e.clientY - startPos.y }));
+    }
+  };
+  
+  const handleEnd = () => {
+    setIsDragging(false);
+    setPinchStart({ dist: 0, scale: 1 });
   };
 
-  const onDrag = (e) => {
-    if (!isDragging) return;
-    const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-    const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-    setPos({ x: clientX - startPos.x, y: clientY - startPos.y });
-  };
+  // 💡 자체 검색 실행 함수!
+  const executeLocalSearch = () => {
+    const query = (searchQuery !== undefined ? searchQuery : localQuery).trim().toLowerCase();
+    
+    if (!query) {
+      setSearchedSeatIds([]);
+      return;
+    }
 
-  const endDrag = () => setIsDragging(false);
+    // 이름, 팀명, 내선번호 중 하나라도 포함되면 찾기!
+    const matches = seatArray.filter(s => 
+      (s.name && s.name.toLowerCase().includes(query)) ||
+      (s.team && s.team.toLowerCase().includes(query)) ||
+      (s.id && s.id.toLowerCase().includes(query))
+    );
+
+    setSearchedSeatIds(matches.map(m => m.id));
+  };
 
   const getTeamColor = (team) => {
+    if (!team) return '#E5E7EB';
     if (team === '상담' || team === '팀장') return '#FDE047'; 
     if (team.includes('오토') || team === 'SSO') return '#D9F99D'; 
     if (team === '솔포인트' || team === '발급') return '#86EFAC'; 
@@ -126,65 +211,94 @@ function MapView({ setSelectedSeat }) {
     return '#E5E7EB'; 
   };
 
+  // 입력값 업데이트
+  const actualQuery = searchQuery !== undefined ? searchQuery : localQuery;
+  const updateQuery = (val) => {
+    if (typeof setSearchQuery === 'function') setSearchQuery(val);
+    setLocalQuery(val);
+  };
+
   return (
     <div 
       ref={containerRef}
-      // 💡 화면 전체(flex-1)를 차지하도록 스타일 수정 (상단 메뉴 제외한 모든 영역 100% 사용)
-      className="w-full flex-1 bg-gray-900 relative overflow-hidden flex items-center justify-center border-t border-gray-800"
-      onMouseDown={startDrag} onMouseMove={onDrag} onMouseUp={endDrag} onMouseLeave={endDrag}
-      onTouchStart={startDrag} onTouchMove={onDrag} onTouchEnd={endDrag}
-      style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+      className="fixed inset-0 bg-[#1A202C] overflow-hidden"
+      style={{ touchAction: 'none' }}
+      onMouseDown={handleStart} onMouseMove={handleMove} onMouseUp={handleEnd} onMouseLeave={handleEnd}
+      onTouchStart={handleStart} onTouchMove={handleMove} onTouchEnd={handleEnd}
     >
       
-      {/* 💡 거추장스러운 버튼들 모두 삭제, 안내바만 왼쪽 아래에 작게 배치 */}
-      <div className="absolute bottom-4 left-4 z-10 bg-gray-800/80 p-2 rounded-lg pointer-events-none">
-        <p className="text-xs text-gray-400 font-bold">15층 개발팀 전체도면</p>
+      {/* 🚀 UI 영역: 깔끔하게 한 줄로 압축! (파란색 안내창 삭제됨) */}
+      <div className="absolute top-4 left-4 z-50 flex flex-col gap-2 pointer-events-none w-full max-w-md">
+        <div className="flex flex-row items-center gap-2 pointer-events-auto">
+          
+          {/* 🔙 돌아가기 아이콘 버튼 */}
+          <button 
+            onClick={() => {
+              if (typeof setView === 'function') setView('home');
+              else window.location.reload(); 
+            }}
+            className="bg-[#374151] text-white w-11 h-11 rounded-lg font-black text-xl border border-gray-500 shadow-md flex items-center justify-center flex-shrink-0 active:bg-gray-600"
+          >
+            🔙
+          </button>
+
+          {/* 🤖 검색 입력창 */}
+          <input 
+            type="text" 
+            value={actualQuery} 
+            onChange={(e) => updateQuery(e.target.value)} 
+            onKeyDown={(e) => e.key === 'Enter' && executeLocalSearch()} // 엔터키 지원!
+            placeholder="이름/팀 검색"
+            className="w-32 sm:w-48 px-3 py-2 h-11 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:border-blue-500 font-bold text-sm shadow-md"
+          />
+          
+          {/* 🔍 진짜 작동하는 자체 검색 버튼! */}
+          <button onClick={executeLocalSearch} className="bg-blue-600 text-white font-bold px-4 h-11 rounded-lg text-sm shadow-md whitespace-nowrap active:bg-blue-500">
+            검색
+          </button>
+        </div>
       </div>
 
-      <div 
-        style={{ 
-          width: MAP_WIDTH, height: MAP_HEIGHT,
-          // 💡 무조건 90도 돌아가 있도록 고정!
-          transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale}) rotate(90deg)`, 
-          transformOrigin: 'center center',
-          transition: isDragging ? 'none' : 'transform 0.15s ease-out' 
-        }}
-        className="flex items-center justify-center absolute top-1/2 left-1/2"
-        style={{
-          width: MAP_WIDTH, height: MAP_HEIGHT,
-          marginLeft: -MAP_WIDTH / 2, marginTop: -MAP_HEIGHT / 2,
-          transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale}) rotate(90deg)`, 
-          transition: isDragging ? 'none' : 'transform 0.1s ease-out'
-        }}
-      >
-        {/* 💡 안쪽 남색 배경(bg-[#2D3748])과 테두리 삭제 -> 검은 화면 전체에 스며들도록 수정 */}
-        <svg viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} width="100%" height="100%">
-          <rect x="50" y="100" width="900" height="80" fill="#374151" rx="8" />
-          <text x="500" y="145" fill="#9CA3AF" fontSize="28" fontWeight="900" textAnchor="middle">E/V (엘리베이터)</text>
-          
-          {SEAT_DATA.map((seat) => (
-            <g 
-              key={seat.id} transform={`translate(${seat.x}, ${seat.y})`} style={{ cursor: 'pointer' }}
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                setSelectedSeat(seat);
-                alert(`[${seat.team}] ${seat.name} - 내선: ${seat.id}`);
-              }}
-            >
-              <rect width="60" height="80" fill={getTeamColor(seat.team)} rx="4" stroke="#111827" strokeWidth="1.5" />
-              <text x="30" y="22" fill="#111827" fontSize="12" fontWeight="800" textAnchor="middle">{seat.team}</text>
-              <text x="30" y="45" fill="#000" fontSize="16" fontWeight="900" textAnchor="middle">{seat.name}</text>
+      <svg className="w-full h-full absolute inset-0 touch-none" style={{ cursor: isDragging ? 'grabbing' : 'grab' }}>
+        <g transform={`translate(${center.x + viewState.x}, ${center.y + viewState.y}) scale(${viewState.scale}) ${isPhone ? 'rotate(90)' : ''}`}>
+          <g transform="translate(-670, -405)">
+            <rect x="50" y="100" width="900" height="80" fill="#374151" rx="8" />
+            <text x="500" y="145" fill="#9CA3AF" fontSize="28" fontWeight="900" textAnchor="middle">E/V (엘리베이터)</text>
+            
+            {seatArray.map((seat) => {
+              if (!seat.x || !seat.y) return null; 
               
-              {/* 축소 시에도 내선번호가 잘 보이도록 제한 완화 */}
-              {scale > 0.15 && <text x="30" y="68" fill="#4B5563" fontSize="13" fontWeight="900" textAnchor="middle">{seat.id}</text>}
-            </g>
-          ))}
-        </svg>
-      </div>
+              // 💡 자체 검색된 자리(searchedSeatIds)도 하이라이트 조건에 포함!
+              const isHighlighted = (highlightedSeatId === seat.id) || 
+                                    (recommendedSeats && recommendedSeats.includes(seat.id)) ||
+                                    searchedSeatIds.includes(seat.id);
+                                    
+              const strokeColor = isHighlighted ? '#EF4444' : '#111827';
+              const strokeWidth = isHighlighted ? '6' : '1.5'; 
+
+              return (
+                <g 
+                  key={seat.id} transform={`translate(${seat.x}, ${seat.y})`} style={{ cursor: 'pointer' }}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    if(typeof setSelectedSeat === 'function') setSelectedSeat(seat);
+                    // 🚨 클릭 시 뜨던 지긋지긋한 alert 삭제 완료!
+                  }}
+                >
+                  <rect width="60" height="80" fill={getTeamColor(seat.team)} rx="4" stroke={strokeColor} strokeWidth={strokeWidth} />
+                  <text x="30" y="22" fill="#111827" fontSize="12" fontWeight="900" textAnchor="middle">{seat.team}</text>
+                  <text x="30" y="45" fill="#000" fontSize="16" fontWeight="900" textAnchor="middle">{seat.name}</text>
+                  <text x="30" y="68" fill="#4B5563" fontSize="14" fontWeight="900" textAnchor="middle">{seat.id}</text>
+                  {isHighlighted && <circle cx="30" cy="-10" r="10" fill="#EF4444" className="animate-ping" />}
+                </g>
+              );
+            })}
+          </g>
+        </g>
+      </svg>
     </div>
   );
 }
-
 // ==========================================
 // 1. 메인 App 컴포넌트
 // ==========================================

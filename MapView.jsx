@@ -1,20 +1,21 @@
 function MapView({ 
-  setView, rows, cols, seats, setSelectedSeat, 
+  setView, seats, setSelectedSeat, 
   searchQuery, setSearchQuery, handleAISearch, handleAIRecommend, 
   isSearching, aiMessage, highlightedSeatId, recommendedSeats 
 }) {
   const { useState, useRef, useEffect } = React;
   
-  // 💡 핵심 1: 왼쪽이 짤리지 않도록 시작 좌표(VIEW_X)를 -200으로 대폭 후퇴시켜 여백을 엄청나게 줍니다!
-  const VIEW_X = -200; 
-  const VIEW_Y = -50;
-  const VIEW_W = 1800; // 넉넉하게 도화지도 넓힘
-  const VIEW_H = 1000;
+  // 💡 도화지를 광활하게 늘려서 Test실(-50)이 절대 짤리지 않습니다!
+  const VIEW_X = -150; 
+  const VIEW_Y = -100;
+  const VIEW_W = 1800; 
+  const VIEW_H = 1100;
   
   const [scale, setScale] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 }); 
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const [isPhone, setIsPhone] = useState(false);
   const containerRef = useRef(null);
 
   const seatArray = Array.isArray(seats) ? seats : Object.values(seats || {});
@@ -23,12 +24,18 @@ function MapView({
     const fitMap = () => {
       const screenW = window.innerWidth;
       const screenH = window.innerHeight;
-      const scaleX = screenW / VIEW_H; 
-      const scaleY = screenH / VIEW_W; 
-      // 96% 비율로 꽉 채웁니다.
-      setScale(Math.min(scaleX, scaleY) * 0.96);
+      const isPortrait = screenH > screenW;
+      setIsPhone(isPortrait);
+
+      const mapW = isPortrait ? VIEW_H : VIEW_W;
+      const mapH = isPortrait ? VIEW_W : VIEW_H;
+
+      const scaleX = screenW / mapW; 
+      const scaleY = screenH / mapH; 
+      setScale(Math.min(scaleX, scaleY) * 0.95);
       setPos({ x: 0, y: 0 }); 
     };
+
     fitMap(); 
     window.addEventListener('resize', fitMap); 
     return () => window.removeEventListener('resize', fitMap);
@@ -53,14 +60,12 @@ function MapView({
     const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
     setStartPos({ x: clientX - pos.x, y: clientY - pos.y });
   };
-
   const onDrag = (e) => {
     if (!isDragging) return;
     const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
     const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
     setPos({ x: clientX - startPos.x, y: clientY - startPos.y });
   };
-
   const endDrag = () => setIsDragging(false);
 
   const getTeamColor = (team) => {
@@ -83,33 +88,37 @@ function MapView({
       onTouchStart={startDrag} onTouchMove={onDrag} onTouchEnd={endDrag}
     >
       
-      {/* 💡 핵심 2: 뒤로 가기 버튼에 초강력 z-index와 인라인 스타일을 부여해서 무조건 뚫고 나오게 만듭니다! */}
+      {/* 🚀 이 버튼이 보이면 캐시가 정상적으로 뚫린 겁니다! */}
       <button 
         onClick={() => {
-          if(setView) setView('home');
-          else window.location.reload(); // setView가 끊겨도 새로고침으로 무조건 탈출 가능
+          if (typeof setView === 'function') setView('home');
+          else window.location.reload(); 
         }}
-        style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 99999, padding: '12px 20px', backgroundColor: '#1F2937', color: 'white', fontWeight: 'bold', borderRadius: '12px', border: '2px solid #4B5563', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}
+        className="absolute z-[99999] bg-gray-800 text-white px-5 py-3 rounded-xl font-bold border-2 border-gray-600 shadow-2xl"
+        style={{ top: '30px', left: '20px' }}
       >
-        🔙 돌아가기
+        🔙 홈으로 돌아가기
       </button>
 
-      {/* 💡 핵심 3: AI 검색창도 무조건 화면 맨 위에 고정시킵니다! */}
-      <div style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
+      {/* 🤖 AI 검색창 */}
+      <div 
+        className="absolute z-[99999] flex flex-col items-end gap-2"
+        style={{ top: '30px', right: '20px' }}
+      >
+        <div className="flex gap-2">
           <input 
             type="text" 
             value={searchQuery || ''} 
-            onChange={(e) => setSearchQuery && setSearchQuery(e.target.value)} 
+            onChange={(e) => typeof setSearchQuery === 'function' && setSearchQuery(e.target.value)} 
             placeholder="이름/팀 검색"
-            style={{ padding: '10px 16px', borderRadius: '8px', backgroundColor: '#1F2937', color: 'white', border: '1px solid #4B5563', outline: 'none' }}
+            className="px-4 py-3 rounded-xl bg-gray-800 text-white border-2 border-gray-600 focus:outline-none focus:border-blue-500 w-[180px] sm:w-[250px]"
           />
-          <button onClick={handleAISearch} style={{ backgroundColor: '#2563EB', color: 'white', fontWeight: 'bold', padding: '10px 16px', borderRadius: '8px' }}>검색</button>
-          <button onClick={handleAIRecommend} style={{ backgroundColor: '#9333EA', color: 'white', fontWeight: 'bold', padding: '10px 16px', borderRadius: '8px' }}>AI 추천</button>
+          <button onClick={handleAISearch} className="bg-blue-600 text-white font-bold px-4 py-3 rounded-xl shadow-lg">검색</button>
+          <button onClick={handleAIRecommend} className="bg-purple-600 text-white font-bold px-4 py-3 rounded-xl shadow-lg">AI 추천</button>
         </div>
         
         {aiMessage && (
-          <div style={{ backgroundColor: 'rgba(30, 58, 138, 0.9)', border: '1px solid #60A5FA', color: '#DBEAFE', padding: '12px 16px', borderRadius: '8px', maxWidth: '300px', fontSize: '14px', marginTop: '8px' }}>
+          <div className="bg-blue-900/90 border border-blue-400 text-blue-100 px-4 py-3 rounded-xl max-w-[300px] text-sm shadow-xl">
             {isSearching ? "⏳ AI가 분석 중입니다..." : aiMessage}
           </div>
         )}
@@ -120,17 +129,14 @@ function MapView({
         style={{
           width: VIEW_W, height: VIEW_H,
           marginLeft: -VIEW_W / 2, marginTop: -VIEW_H / 2,
-          transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale}) rotate(90deg)`, 
+          transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale}) ${isPhone ? 'rotate(90deg)' : ''}`, 
           transition: isDragging ? 'none' : 'transform 0.1s ease-out'
         }}
       >
         <svg viewBox={`${VIEW_X} ${VIEW_Y} ${VIEW_W} ${VIEW_H}`} width="100%" height="100%">
           
-          {/* 도화지 배경을 명확하게 깔아줍니다 */}
-          <rect x={VIEW_X} y={VIEW_Y} width={VIEW_W} height={VIEW_H} fill="#2D3748" rx="40" stroke="#4B5563" strokeWidth="4" />
-
-          <rect x="50" y="100" width="900" height="80" fill="#4A5568" rx="8" />
-          <text x="500" y="145" fill="#E2E8F0" fontSize="28" fontWeight="900" textAnchor="middle">E/V (엘리베이터)</text>
+          <rect x="50" y="100" width="900" height="80" fill="#374151" rx="8" />
+          <text x="500" y="145" fill="#9CA3AF" fontSize="28" fontWeight="900" textAnchor="middle">E/V (엘리베이터)</text>
           
           {seatArray.map((seat) => {
             if (!seat.x || !seat.y) return null; 
@@ -144,7 +150,7 @@ function MapView({
                 key={seat.id} transform={`translate(${seat.x}, ${seat.y})`} style={{ cursor: 'pointer' }}
                 onClick={(e) => { 
                   e.stopPropagation(); 
-                  if(setSelectedSeat) setSelectedSeat(seat);
+                  if(typeof setSelectedSeat === 'function') setSelectedSeat(seat);
                   alert(`[${seat.team}] ${seat.name} - 내선: ${seat.id}`);
                 }}
               >
@@ -152,10 +158,10 @@ function MapView({
                 <text x="30" y="22" fill="#111827" fontSize="12" fontWeight="800" textAnchor="middle">{seat.team}</text>
                 <text x="30" y="45" fill="#000" fontSize="16" fontWeight="900" textAnchor="middle">{seat.name}</text>
                 
-                {scale > 0.15 && <text x="30" y="68" fill="#4A5568" fontSize="13" fontWeight="900" textAnchor="middle">{seat.id}</text>}
+                {scale > 0.15 && <text x="30" y="68" fill="#4B5563" fontSize="13" fontWeight="900" textAnchor="middle">{seat.id}</text>}
                 
                 {isHighlighted && (
-                  <circle cx="30" cy="-10" r="8" fill="#EF4444" className="animate-ping" />
+                  <circle cx="30" cy="-10" r="10" fill="#EF4444" className="animate-ping" />
                 )}
               </g>
             );
