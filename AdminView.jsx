@@ -66,12 +66,6 @@ function AdminView({ setView, seats }) {
                     <div className="flex gap-2">
                       <button onClick={() => handleAction(req, true)} className="bg-green-600 px-3 py-2 rounded-lg text-xs font-bold shadow-lg">승인</button>
                       <button onClick={() => handleAction(req, false)} className="bg-gray-700 px-3 py-2 rounded-lg text-xs font-bold">반려</button>
-                      <button 
-                            onClick={() => window.api.triggerLunchMatch(Object.values(seats || {}))}
-                            className="w-full p-4 mb-6 bg-gradient-to-r from-orange-500 to-pink-500 rounded-2xl font-black text-white shadow-lg active:scale-95 transition-all"
-                          >
-                            🍱 오늘의 점심 파티 랜덤 생성기 (AI 맛집 추천)
-                      </button>
                     </div>
                   ) : (
                     <span className="text-xs font-bold text-gray-500">{req.status === 'approved' ? '승인됨' : '반려됨'}</span>
