@@ -4,7 +4,7 @@ const rows = ['A', 'B', 'C', 'D', 'E'];
 const cols = Array.from({ length: 10 }, (_, i) => i + 1);
 const zones = ['개발팀', '디자인팀', '기획팀', '프리랜서존'];
 
-const SEAT_DATA = [
+const SEAT_DATA = [ 
   // 1열 (수정됨: 680->700, 770->790)
   {id: "1224", name: "박준형", team: "상담", x: 50, y: 250}, {id: "1609", name: "김동혁", team: "상담", x: 50, y: 340}, {id: "1369", name: "김성훈", team: "운영혁신", x: 50, y: 430}, {id: "1413", name: "빈자리1", team: "운영혁신", x: 50, y: 520}, {id: "9901", name: "김범", team: "운영혁신", x: 50, y: 610}, {id: "1479", name: "이동은", team: "기획", x: 50, y: 700}, {id: "1401", name: "서성훈", team: "팀장", x: 50, y: 790},
   {id: "Test", name: "Test실", team: "공용", x: -20, y: 700}, {id: "1475", name: "서강석", team: "본부장", x: -20, y: 790},
