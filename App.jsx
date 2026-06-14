@@ -4,103 +4,114 @@ const rows = ['A', 'B', 'C', 'D', 'E'];
 const cols = Array.from({ length: 10 }, (_, i) => i + 1);
 const zones = ['개발팀', '디자인팀', '기획팀', '프리랜서존'];
 
-const SEAT_DATA = [ 
-  // 1열 (수정됨: 680->700, 770->790)
-  {id: "1224", name: "박준형", team: "상담", x: 50, y: 250}, {id: "1609", name: "김동혁", team: "상담", x: 50, y: 340}, {id: "1369", name: "김성훈", team: "운영혁신", x: 50, y: 430}, {id: "1413", name: "빈자리1", team: "운영혁신", x: 50, y: 520}, {id: "9901", name: "김범", team: "운영혁신", x: 50, y: 610}, {id: "1479", name: "이동은", team: "기획", x: 50, y: 700}, {id: "1401", name: "서성훈", team: "팀장", x: 50, y: 790},
-  {id: "Test", name: "Test실", team: "공용", x: -20, y: 700}, {id: "1475", name: "서강석", team: "본부장", x: -20, y: 790},
-  
+const SEAT_DATA = [
+  // ==========================================
+  // [왼쪽 별도 구역] 본부장 / Test실 (1열 바로 왼쪽 부착)
+  // ==========================================
+  {id: "Test", name: "Test실", team: "공용", x: 30, y: 700},
+  {id: "1475", name: "서강석", team: "본부장", x: 30, y: 790},
+
+  // ==========================================
+  // [그룹 1] 1열 & 2열
+  // ==========================================
+  // 1열
+  {id: "1224", name: "박준형", team: "상담", x: 100, y: 250}, {id: "1609", name: "김동혁", team: "상담", x: 100, y: 340}, {id: "1255", name: "김성훈", team: "운영혁신", x: 100, y: 430}, {id: "1413", name: "신규", team: "빈자리", x: 100, y: 520}, {id: "9901", name: "김범", team: "운영혁신", x: 100, y: 610}, {id: "1479", name: "이동은", team: "기획", x: 100, y: 700}, {id: "1401", name: "서성훈", team: "팀장", x: 100, y: 790},
   // 2열
-  {id: "1483", name: "김기훈", team: "상담", x: 120, y: 250}, {id: "1285", name: "이소연", team: "상담", x: 120, y: 340}, {id: "1788", name: "장병용", team: "상담", x: 120, y: 430}, {id: "1712", name: "장성호", team: "솔포인트", x: 120, y: 520}, {id: "1137", name: "박남호", team: "솔포인트", x: 120, y: 610}, {id: "8892", name: "강선희", team: "솔포인트", x: 120, y: 700}, 
-  
+  {id: "1483", name: "김기훈", team: "상담", x: 170, y: 250}, {id: "1285", name: "이소연", team: "상담", x: 170, y: 340}, {id: "1788", name: "장병용", team: "상담", x: 170, y: 430}, {id: "1712", name: "장성호", team: "솔포인트", x: 170, y: 520}, {id: "1137", name: "박남호", team: "솔포인트", x: 170, y: 610}, {id: "1369", name: "강선희", team: "솔포인트", x: 170, y: 700},
+
+  // ==========================================
+  // [그룹 2] 3열 & 4열
+  // ==========================================
   // 3열
-  {id: "1485", name: "이장규", team: "상담", x: 190, y: 250}, {id: "1797", name: "김지연", team: "상담", x: 190, y: 340}, {id: "9903", name: "김상민", team: "상담", x: 190, y: 430}, {id: "1364", name: "김윤호", team: "상담", x: 190, y: 520}, {id: "8625", name: "김지영", team: "상담", x: 190, y: 610}, {id: "1280", name: "조경훈", team: "상담", x: 190, y: 700},
-  
+  {id: "1485", name: "이장규", team: "상담", x: 260, y: 250}, {id: "1797", name: "김지연", team: "상담", x: 260, y: 340}, {id: "9903", name: "김상민", team: "상담", x: 260, y: 430}, {id: "1364", name: "김윤호", team: "상담", x: 260, y: 520}, {id: "8625", name: "김지영", team: "상담", x: 260, y: 610}, {id: "1280", name: "조경훈", team: "상담", x: 260, y: 700},
   // 4열
-  {id: "1437", name: "김영필", team: "오토", x: 280, y: 250}, {id: "1448", name: "김세희", team: "오토", x: 280, y: 340}, {id: "1978", name: "김예린", team: "오토", x: 280, y: 430}, {id: "1880", name: "박지건", team: "오토", x: 280, y: 520}, {id: "1489", name: "남진아", team: "오토", x: 280, y: 610}, {id: "1461", name: "조용진", team: "오토", x: 280, y: 700}, {id: "1979", name: "정진삼", team: "오토", x: 280, y: 790},
-  
+  {id: "1437", name: "김영필", team: "오토", x: 330, y: 250}, {id: "1448", name: "김세희", team: "오토", x: 330, y: 340}, {id: "1978", name: "홍영기", team: "오토", x: 330, y: 430}, {id: "1880", name: "박지건", team: "오토", x: 330, y: 520}, {id: "1489", name: "남진아", team: "오토", x: 330, y: 610}, {id: "1461", name: "조용진", team: "오토", x: 330, y: 700}, {id: "1979", name: "김종현", team: "오토", x: 330, y: 790},
+
+  // ==========================================
+  // [그룹 3] 5열 & 6열
+  // ==========================================
   // 5열
-  {id: "1814", name: "윤호영", team: "오토", x: 350, y: 250}, {id: "1741", name: "김선혜", team: "오토", x: 350, y: 340}, {id: "1642", name: "김준석", team: "오토", x: 350, y: 430}, {id: "1464", name: "이성학", team: "오토", x: 350, y: 520}, {id: "1288", name: "김보령", team: "오토", x: 350, y: 610}, {id: "1442", name: "박용탁", team: "오토", x: 350, y: 700}, {id: "1753", name: "김종현", team: "오토", x: 350, y: 790},
-  
+  {id: "1814", name: "윤호영", team: "오토", x: 420, y: 250}, {id: "1741", name: "김선혜", team: "오토", x: 420, y: 340}, {id: "1642", name: "김준석", team: "오토", x: 420, y: 430}, {id: "1464", name: "이성학", team: "오토", x: 420, y: 520}, {id: "1288", name: "김보령", team: "오토", x: 420, y: 610}, {id: "1442", name: "박용탁", team: "오토", x: 420, y: 700}, {id: "1753", name: "김원규", team: "재무", x: 420, y: 790},
   // 6열
-  {id: "1480", name: "조성민", team: "오토", x: 420, y: 250}, {id: "8680", name: "표동수", team: "오토", x: 420, y: 340}, {id: "1465", name: "김연석", team: "오토", x: 420, y: 430}, {id: "1317", name: "박대윤", team: "오토", x: 420, y: 520}, {id: "1825", name: "정보람", team: "오토", x: 420, y: 610}, {id: "1537", name: "길연우", team: "오토", x: 420, y: 700}, {id: "1255", name: "김성훈", team: "SSO", x: 420, y: 790},
-  
+  {id: "1480", name: "조성인", team: "오토", x: 490, y: 250}, {id: "8680", name: "표동수", team: "오토", x: 490, y: 340}, {id: "1465", name: "김현석", team: "오토", x: 490, y: 430}, {id: "1317", name: "김예린", team: "오토", x: 490, y: 520}, {id: "1825", name: "박대윤", team: "오토", x: 490, y: 610}, {id: "1537", name: "김현우", team: "오토", x: 490, y: 700}, {id: "1477", name: "정재문", team: "재무", x: 490, y: 790},
+
+  // ==========================================
+  // [그룹 4] 7열 & 8열
+  // ==========================================
   // 7열
-  {id: "1351", name: "이하나", team: "재무", x: 490, y: 250}, {id: "1803", name: "심혜진", team: "재무", x: 490, y: 340}, {id: "1414", name: "김동주", team: "재무", x: 490, y: 430}, {id: "1375", name: "김우철", team: "재무", x: 490, y: 520}, {id: "1726", name: "김경원", team: "발급", x: 490, y: 610}, {id: "1139", name: "권두연", team: "발급", x: 490, y: 700}, {id: "OA", name: "기동OA", team: "공용", x: 490, y: 790},
-  
+  {id: "1351", name: "이하나", team: "재무", x: 580, y: 250}, {id: "1803", name: "심혜진", team: "재무", x: 580, y: 340}, {id: "1414", name: "유미숙", team: "재무", x: 580, y: 430}, {id: "1375", name: "김우철", team: "재무", x: 580, y: 520}, {id: "8892", name: "김연섭", team: "통합메시지", x: 580, y: 610}, {id: "1380", name: "이현지", team: "발급", x: 580, y: 700}, {id: "OA", name: "기동OA", team: "공용", x: 580, y: 790},
   // 8열
-  {id: "1669", name: "길원규", team: "재무", x: 580, y: 250}, {id: "1380", name: "이현지", team: "재무", x: 580, y: 340}, {id: "1417", name: "정재은", team: "재무", x: 580, y: 430}, {id: "9905", name: "송지아", team: "재무", x: 580, y: 520}, {id: "1446", name: "박미연", team: "마이카", x: 580, y: 610}, {id: "1266", name: "김연하", team: "마이카", x: 580, y: 700}, {id: "1331", name: "노지은", team: "개발전담", x: 580, y: 790},
-  
+  {id: "1866", name: "이승인", team: "개발전담", x: 650, y: 250}, {id: "1188", name: "방성원", team: "개발전담", x: 650, y: 340}, {id: "1861", name: "시일교", team: "통합메시지", x: 650, y: 430}, {id: "1290", name: "박재훈", team: "통합메세지", x: 650, y: 520}, {id: "1292", name: "강윤지", team: "통합메세지", x: 650, y: 610}, {id: "1310", name: "임태욱", team: "통합메세지", x: 650, y: 700}, {id: "1293", name: "홍성민", team: "통합메세지", x: 650, y: 790},
+
+  // ==========================================
+  // [그룹 5] 9열 & 10열
+  // ==========================================
   // 9열
-  {id: "1258", name: "신동엽", team: "홈페이지", x: 650, y: 250}, {id: "8686", name: "김성우", team: "홈페이지", x: 650, y: 340}, {id: "8048", name: "유명석", team: "홈페이지", x: 650, y: 430}, {id: "1188", name: "방성원", team: "개발전담", x: 650, y: 520}, {id: "1942", name: "변상현", team: "마이카", x: 650, y: 610}, {id: "1878", name: "임형진", team: "마이카", x: 650, y: 700}, {id: "1988", name: "임영정", team: "마이카", x: 650, y: 790},
-  
+  {id: "1331", name: "황병용", team: "개발전담", x: 740, y: 250}, {id: "1332", name: "이준상", team: "개발전담", x: 740, y: 340}, {id: "1268", name: "정강호", team: "마이카", x: 740, y: 430}, {id: "1446", name: "김지민", team: "마이카", x: 740, y: 520}, {id: "1942", name: "변상현", team: "마이카", x: 740, y: 610}, {id: "1878", name: "임형진", team: "마이카", x: 740, y: 700}, {id: "1726", name: "김경원", team: "발급", x: 740, y: 790},
   // 10열
-  {id: "1268", name: "정강호", team: "홈페이지", x: 740, y: 250}, {id: "1945", name: "박종원", team: "홈페이지", x: 740, y: 340}, {id: "1366", name: "이동현", team: "전자문서", x: 740, y: 430}, {id: "1773", name: "정희종", team: "전자문서", x: 740, y: 520}, {id: "8658", name: "함덕훈", team: "홈페이지", x: 740, y: 610}, {id: "8687", name: "이선아", team: "홈페이지", x: 740, y: 700}, {id: "1778", name: "이연경", team: "홈페이지", x: 740, y: 790},
-  
+  {id: "1946", name: "조성훈", team: "개발전담", x: 810, y: 250}, {id: "8884", name: "박은혜", team: "올댓", x: 810, y: 340}, {id: "8885", name: "강용선", team: "올댓", x: 810, y: 430}, {id: "8886", name: "이민호", team: "올댓", x: 810, y: 520}, {id: "8658", name: "함덕훈", team: "홈페이지", x: 810, y: 610}, {id: "8687", name: "이선아", team: "홈페이지", x: 810, y: 700}, {id: "1778", name: "이현경", team: "홈페이지", x: 810, y: 790},
+
+  // ==========================================
+  // [그룹 6] 11열 & 12열
+  // ==========================================
   // 11열
-  {id: "1943", name: "김찬수", team: "개발전담", x: 810, y: 250}, {id: "1865", name: "강규동", team: "개발전담", x: 810, y: 340}, {id: "8886", name: "이민호", team: "올댓", x: 810, y: 430}, {id: "8885", name: "강용선", team: "올댓", x: 810, y: 520}, {id: "8884", name: "박은혜", team: "올댓", x: 810, y: 610}, {id: "1138", name: "임진철", team: "홈페이지", x: 810, y: 700}, {id: "8883", name: "명보민", team: "올댓", x: 810, y: 790},
-  
+  {id: "1943", name: "김찬수", team: "개발전담", x: 900, y: 250}, {id: "1865", name: "김규동", team: "개발전담", x: 900, y: 340}, {id: "1258", name: "이나현", team: "홈페이지", x: 900, y: 430}, {id: "1945", name: "박종원", team: "홈페이지", x: 900, y: 520}, {id: "1478", name: "용원중", team: "홈페이지", x: 900, y: 610}, {id: "8686", name: "김성우", team: "홈페이지", x: 900, y: 700}, {id: "1266", name: "명보민", team: "홈페이지", x: 900, y: 790},
   // 12열
-  {id: "1870", name: "최민선", team: "개발전담", x: 900, y: 250}, {id: "1947", name: "유현규", team: "개발전담", x: 900, y: 340}, {id: "1842", name: "박재환", team: "홈페이지", x: 900, y: 430}, {id: "1394", name: "김혜경", team: "홈페이지", x: 900, y: 520}, {id: "1443", name: "이영주", team: "홈페이지", x: 900, y: 610}, {id: "7499", name: "최호영", team: "홈페이지", x: 900, y: 700}, {id: "1333", name: "신정은", team: "홈페이지", x: 900, y: 790},
-  
-  // 13열 (최현철 수정됨: 290 -> 250)
-  {id: "1001", name: "최현철", team: "데이타비즈", x: 970, y: 250}, {id: "1001", name: "최현철", team: "데이타비즈", x: 970, y: 340}, {id: "1863", name: "박다은", team: "개발전담", x: 970, y: 430}, {id: "1946", name: "이샛별", team: "개발전담", x: 970, y: 520}, {id: "8681", name: "이면정", team: "홈페이지", x: 970, y: 610}, {id: "1875", name: "홍지연", team: "홈페이지", x: 970, y: 700}, {id: "1478", name: "배경보", team: "홈페이지", x: 970, y: 790},
-  
+  {id: "1870", name: "최승아", team: "개발전담", x: 970, y: 250}, {id: "1947", name: "유현규", team: "개발전담", x: 970, y: 340}, {id: "1842", name: "박재환", team: "홈페이지", x: 970, y: 430}, {id: "1394", name: "김혜경", team: "홈페이지", x: 970, y: 520}, {id: "1443", name: "이영주", team: "홈페이지", x: 970, y: 610}, {id: "7499", name: "최호영", team: "홈페이지", x: 970, y: 700}, {id: "1333", name: "신정은", team: "홈페이지", x: 970, y: 790},
+
+  // ==========================================
+  // [그룹 7] 13열 & 14열
+  // ==========================================
+  // 13열
+  {id: "1734", name: "최현철", team: "데이타비즈", x: 1060, y: 250}, {id: "1730", name: "유지은", team: "데이타비즈", x: 1060, y: 340}, {id: "1863", name: "박다은", team: "개발전담", x: 1060, y: 430}, {id: "1934", name: "오선영", team: "홈페이지", x: 1060, y: 520}, {id: "1138", name: "임진철", team: "홈페이지", x: 1060, y: 610}, {id: "1875", name: "홍지연", team: "홈페이지", x: 1060, y: 700}, {id: "8048", name: "이시원", team: "홈페이지", x: 1060, y: 790},
   // 14열
-  {id: "9906", name: "한동훈", team: "개발전담", x: 1060, y: 250}, {id: "9907", name: "윤지호", team: "개발전담", x: 1060, y: 340}, {id: "1332", name: "이준상", team: "개발전담", x: 1060, y: 430}, {id: "1866", name: "이승민", team: "개발전담", x: 1060, y: 520}, {id: "8181", name: "김용오", team: "홈페이지", x: 1060, y: 610}, {id: "8180", name: "박동영", team: "홈페이지", x: 1060, y: 700}, {id: "8183", name: "이용민", team: "모바일", x: 1060, y: 790},
-  
+  {id: "", name: "공석", team: "공석", x: 1130, y: 250}, {id: "1735", name: "박선용", team: "데이타비즈", x: 1130, y: 340}, {id: "1366", name: "조철현", team: "전자문서", x: 1130, y: 430}, {id: "1773", name: "정종규", team: "전자문서", x: 1130, y: 520}, {id: "8181", name: "김종오", team: "홈페이지", x: 1130, y: 610}, {id: "8180", name: "박동영", team: "홈페이지", x: 1130, y: 700}, {id: "8627", name: "김홍섭", team: "홈페이지", x: 1130, y: 790},
+
+  // ==========================================
+  // [그룹 8] 15열 & 16열
+  // ==========================================
   // 15열
-  {id: "9908", name: "강태오", team: "모바일", x: 1130, y: 250}, {id: "1955", name: "김은정", team: "모바일", x: 1130, y: 340}, {id: "1131", name: "진은성", team: "모바일", x: 1130, y: 430}, {id: "1869", name: "김도현", team: "모바일", x: 1130, y: 520}, {id: "1476", name: "임영우", team: "모바일", x: 1130, y: 610}, {id: "8144", name: "박증환", team: "모바일", x: 1130, y: 700}, {id: "1132", name: "임지우", team: "모바일", x: 1130, y: 790},
-  
+  {id: "1896", name: "민광진", team: "모바일(PLCC)", x: 1220, y: 250}, {id: "1897", name: "이봉원", team: "모바일(PLCC)", x: 1220, y: 340}, {id: "1476", name: "임영우", team: "모바일", x: 1220, y: 430}, {id: "1131", name: "진은성", team: "모바일", x: 1220, y: 520}, {id: "1869", name: "김도현", team: "모바일", x: 1220, y: 610}, {id: "8144", name: "박증원", team: "모바일", x: 1220, y: 700}, {id: "1132", name: "임지우", team: "모바일", x: 1220, y: 790},
   // 16열
-  {id: "1607", name: "윤학민", team: "모바일", x: 1220, y: 250}, {id: "9909", name: "배수지", team: "모바일", x: 1220, y: 340}, {id: "1841", name: "권예림", team: "모바일", x: 1220, y: 430}, {id: "8016", name: "서은빈", team: "모바일", x: 1220, y: 520}, {id: "8159", name: "김성민", team: "모바일", x: 1220, y: 610}, {id: "8191", name: "김지수", team: "모바일", x: 1220, y: 700}, {id: "8182", name: "임종완", team: "모바일", x: 1220, y: 790},
-  
-  // 17열
-  {id: "1316", name: "한민지", team: "모바일", x: 1290, y: 250}, {id: "1315", name: "김지해", team: "모바일", x: 1290, y: 340}, {id: "1811", name: "유지원", team: "모바일", x: 1290, y: 430}, {id: "7547", name: "송효범", team: "모바일", x: 1290, y: 520}, {id: "1810", name: "박재욱", team: "모바일", x: 1290, y: 610}, {id: "8353", name: "승무준", team: "모바일", x: 1290, y: 700}, {id: "8627", name: "김용섭", team: "팀장", x: 1290, y: 790},
-  
-  // 디스커버 존 (상단 독립구역)
-  {id: "8727", name: "김재용", team: "디스커버", x: 1060, y: 20}, {id: "8729", name: "정상은", team: "디스커버", x: 1130, y: 20}, {id: "8712", name: "김찬연", team: "디스커버", x: 1220, y: 20}, {id: "7167", name: "남주석", team: "디스커버", x: 1290, y: 20},
-  {id: "8782", name: "김현진", team: "디스커버", x: 1060, y: 110}, {id: "1793", name: "전진", team: "디스커버", x: 1130, y: 110}, {id: "8713", name: "이동표", team: "디스커버", x: 1220, y: 110}, {id: "8190", name: "장진역", team: "디스커버", x: 1290, y: 110}, {id: "8168", name: "신재준", team: "디스커버", x: 1360, y: 110}
+  {id: "1607", name: "윤학민", team: "모바일", x: 1290, y: 250}, {id: "7547", name: "송효범", team: "모바일", x: 1290, y: 340}, {id: "1955", name: "김은정", team: "모바일", x: 1290, y: 430}, {id: "8016", name: "서은빈", team: "모바일", x: 1290, y: 520}, {id: "8159", name: "김성민", team: "모바일", x: 1290, y: 610}, {id: "8191", name: "김지수", team: "모바일", x: 1290, y: 700}, {id: "1841", name: "권예림", team: "모바일", x: 1290, y: 790},
+
+  // ==========================================
+  // [그룹 9] 17열 (마지막 홀수열)
+  // ==========================================
+  {id: "1316", name: "한민지", team: "모바일", x: 1380, y: 250}, {id: "1315", name: "김지해", team: "모바일", x: 1380, y: 340}, {id: "1811", name: "유지원", team: "모바일", x: 1380, y: 430}, {id: "1294", name: "조호영", team: "모바일", x: 1380, y: 520}, {id: "8182", name: "임종완", team: "모바일", x: 1380, y: 610}, {id: "8353", name: "승무준", team: "모바일", x: 1380, y: 700}, {id: "8183", name: "이종민", team: "모바일", x: 1380, y: 790},
+
+  // ==========================================
+  // 디스커버 존 (우측 상단 독립구역)
+  // ==========================================
+  {id: "8727", name: "김재용", team: "디스커버", x: 1060, y: 20}, {id: "8729", name: "정상은", team: "디스커버", x: 1140, y: 20}, {id: "8712", name: "김찬연", team: "디스커버", x: 1220, y: 20}, {id: "7167", name: "남주석", team: "디스커버", x: 1300, y: 20},
+  {id: "8782", name: "김현진", team: "디스커버", x: 1060, y: 110}, {id: "1793", name: "전진", team: "디스커버", x: 1140, y: 110}, {id: "8713", name: "이동표", team: "디스커버", x: 1220, y: 110}, {id: "8190", name: "장진역", team: "디스커버", x: 1300, y: 110}, {id: "8168", name: "신재준", team: "디스커버", x: 1380, y: 110}
 ];
 
-// 🎨 확실하게 구분되는 무지개 파스텔톤 팀 컬러 매핑
+// 파트장 명단 선언 (오타 대비 기존 데이터 이름도 포함)
+const PART_LEADERS = ['조경훈', '김종현', '김종오', '김흥섭', '김홍섭', '강선희', '김연섭', '이종민', '이종인', '정재문'];
+
+// 🎨 확실하게 구분되는 무지개 파스텔톤 팀 컬러 매핑 (세분화 완료)
 const getTeamTheme = (team) => {
   if (!team) return { hex: '#E5E7EB', tw: 'bg-gray-300 text-gray-800 border-gray-400' };
   
-  // 1. 노란색 계열
-  if (team === '상담' || team === '팀장') 
-    return { hex: '#FDE047', tw: 'bg-yellow-300 text-yellow-900 border-yellow-400' }; 
+  if (team === '상담' || team === '팀장') return { hex: '#FDE047', tw: 'bg-yellow-300 text-yellow-900 border-yellow-400' }; 
+  if (team === '운영혁신' || team === '기획') return { hex: '#FCA5A5', tw: 'bg-red-300 text-red-900 border-red-400' };
+  if (team.includes('오토') || team === 'SSO') return { hex: '#D9F99D', tw: 'bg-lime-300 text-lime-900 border-lime-400' }; 
+  if (team === '솔포인트' || team === '발급') return { hex: '#6EE7B7', tw: 'bg-emerald-300 text-emerald-900 border-emerald-400' }; 
+  if (team === '재무') return { hex: '#67E8F9', tw: 'bg-cyan-300 text-cyan-900 border-cyan-400' }; 
   
-  // 2. 빨간색/주황색 계열 (새로 추가!)
-  if (team === '운영혁신' || team === '기획')
-    return { hex: '#FCA5A5', tw: 'bg-red-300 text-red-900 border-red-400' };
-
-  // 3. 연두색 계열
-  if (team.includes('오토') || team === 'SSO') 
-    return { hex: '#D9F99D', tw: 'bg-lime-300 text-lime-900 border-lime-400' }; 
+  // 파란색 계열 분리
+  if (team.includes('개발전담')) return { hex: '#818CF8', tw: 'bg-indigo-300 text-indigo-900 border-indigo-400' }; 
+  if (team === '홈페이지' || team === '전자문서') return { hex: '#93C5FD', tw: 'bg-blue-300 text-blue-900 border-blue-400' }; 
+  if (team === '올댓') return { hex: '#7DD3FC', tw: 'bg-sky-300 text-sky-900 border-sky-400' }; 
   
-  // 4. 에메랄드(청록) 계열
-  if (team === '솔포인트' || team === '발급') 
-    return { hex: '#6EE7B7', tw: 'bg-emerald-300 text-emerald-900 border-emerald-400' }; 
+  // 보라/핑크 계열 분리
+  if (team.includes('마이카')) return { hex: '#C4B5FD', tw: 'bg-violet-300 text-violet-900 border-violet-400' }; 
+  if (team === '데이타비즈') return { hex: '#E879F9', tw: 'bg-fuchsia-300 text-fuchsia-900 border-fuchsia-400' }; 
+  if (team.includes('모바일')) return { hex: '#F9A8D4', tw: 'bg-pink-300 text-pink-900 border-pink-400' }; 
+  if (team.includes('디스커버')) return { hex: '#FDA4AF', tw: 'bg-rose-300 text-rose-900 border-rose-400' }; 
   
-  // 5. 시안(하늘) 계열
-  if (team === '재무') 
-    return { hex: '#67E8F9', tw: 'bg-cyan-300 text-cyan-900 border-cyan-400' }; 
-  
-  // 6. 파란색 계열 (기존 초록에서 변경!)
-  if (team === '홈페이지' || team.includes('개발전담') || team === '올댓' || team === '전자문서') 
-    return { hex: '#93C5FD', tw: 'bg-blue-300 text-blue-900 border-blue-400' }; 
-  
-  // 7. 보라색 계열 (기존 초록에서 변경!)
-  if (team.includes('마이카') || team === '데이타비즈') 
-    return { hex: '#C4B5FD', tw: 'bg-violet-300 text-violet-900 border-violet-400' }; 
-  
-  // 8. 핑크색 계열 (기존 노랑에서 변경!)
-  if (team.includes('모바일') || team.includes('디스커버')) 
-    return { hex: '#F9A8D4', tw: 'bg-pink-300 text-pink-900 border-pink-400' }; 
-  
-  // 9. 무채색 (본부장, 공용 등)
-  if (team === '본부장' || team === '공용')
-    return { hex: '#D1D5DB', tw: 'bg-gray-300 text-gray-900 border-gray-400 font-bold' };
+  if (team === '본부장' || team === '공용') return { hex: '#D1D5DB', tw: 'bg-gray-300 text-gray-900 border-gray-400 font-bold' };
 
   return { hex: '#E5E7EB', tw: 'bg-gray-200 text-gray-800 border-gray-400' }; 
 };
@@ -137,7 +148,7 @@ function MapView({
       const phone = h > w;
       setIsPhone(phone);
 
-      const mapW = 1500;
+      const mapW = 1650; // 맵 너비 확장
       const mapH = 900;
       const scaleX = w / (phone ? mapH : mapW);
       const scaleY = h / (phone ? mapW : mapH);
@@ -233,25 +244,39 @@ function MapView({
 
       <svg className="w-full h-full absolute inset-0 touch-none" style={{ cursor: isDragging ? 'grabbing' : 'grab' }}>
         <g transform={`translate(${center.x + viewState.x}, ${center.y + viewState.y}) scale(${viewState.scale}) ${isPhone ? 'rotate(90)' : ''}`}>
-          <g transform="translate(-670, -405)">
-            <rect x="50" y="100" width="900" height="80" fill="#374151" rx="8" />
-            <text x="500" y="145" fill="#9CA3AF" fontSize="28" fontWeight="900" textAnchor="middle">E/V (엘리베이터)</text>
+          {/* 전체 맵 가운데 정렬을 위해 X축 translate값 소폭 조정 (-830) */}
+          <g transform="translate(-830, -405)">
+            {/* E/V 박스 가로 넓이 및 텍스트 위치 재조정 */}
+            <rect x="50" y="100" width="1000" height="80" fill="#374151" rx="8" />
+            <text x="550" y="145" fill="#9CA3AF" fontSize="28" fontWeight="900" textAnchor="middle">E/V (엘리베이터)</text>
             
-            {seatArray.map((seat) => {
+           {seatArray.map((seat) => {
               if (!seat.x || !seat.y) return null; 
               
               const isHighlighted = (highlightedSeatId === seat.id) || searchedSeatIds.includes(seat.id);
-              const strokeColor = isHighlighted ? '#EF4444' : '#111827';
-              const strokeWidth = isHighlighted ? '6' : '1.5'; 
+              const isPartLeader = PART_LEADERS.includes(seat.name); // 파트장 여부 확인
+              
+              const strokeColor = isHighlighted ? '#EF4444' : (isPartLeader ? '#F59E0B' : '#111827');
+              const strokeWidth = isHighlighted ? '6' : (isPartLeader ? '3' : '1.5'); 
 
               return (
                 <g key={seat.id} transform={`translate(${seat.x}, ${seat.y})`} style={{ cursor: 'pointer' }}
                   onClick={(e) => { e.stopPropagation(); setSelectedSeat(seat); }}>
-                  {/* 통합 테마 함수에서 .hex를 가져와 SVG rect 색상 적용 */}
+                  
+                  {/* ✨ 파트장 전용 빛나는(pulse) 아우라 이펙트 */}
+                  {isPartLeader && (
+                    <rect x="-4" y="-4" width="68" height="88" fill="none" stroke="#FBBF24" strokeWidth="4" rx="6" className="animate-pulse" />
+                  )}
+
                   <rect width="60" height="80" fill={getTeamTheme(seat.team).hex} rx="4" stroke={strokeColor} strokeWidth={strokeWidth} />
+                  
+                  {/* 👑 파트장 왕관 아이콘 */}
+                  {isPartLeader && <text x="12" y="18" fontSize="12" textAnchor="middle">👑</text>}
+
                   <text x="30" y="22" fill="#111827" fontSize="12" fontWeight="900" textAnchor="middle">{seat.team}</text>
                   <text x="30" y="45" fill="#000" fontSize="16" fontWeight="900" textAnchor="middle">{seat.name}</text>
                   <text x="30" y="68" fill="#4B5563" fontSize="14" fontWeight="900" textAnchor="middle">{seat.id}</text>
+                  
                   {isHighlighted && <circle cx="30" cy="-10" r="12" fill="#EF4444" className="animate-ping" />}
                 </g>
               );
@@ -264,7 +289,7 @@ function MapView({
 }
 
 // ==========================================
-// 2. 홈 화면 (Home) 컴포넌트 🌟(사주/맛집 복구 완료!)
+// 2. 홈 화면 (Home) 컴포넌트 🌟
 // ==========================================
 function Home({ setView, user }) {
   const [isSajuInputOpen, setIsSajuInputOpen] = React.useState(false); 
@@ -584,8 +609,6 @@ function ZoneView({ setView, seats, setHighlightedSeatId }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
           {sortedTeams.map((teamName) => {
             const members = groupedByTeam[teamName];
-            
-            // 통합 테마 함수에서 .tw(클래스)를 가져와 적용
             const theme = getTeamTheme(teamName);
             const colorClass = theme.tw;
 
@@ -605,9 +628,9 @@ function ZoneView({ setView, seats, setHighlightedSeatId }) {
                         setHighlightedSeatId(member.id);
                         setView('map');
                       }}
-                      className={`py-1.5 px-1 rounded-lg text-sm font-bold border transition-transform hover:scale-105 active:scale-95 shadow-sm truncate text-center ${colorClass}`}
+                      className={`py-1.5 px-1 rounded-lg text-sm font-bold border transition-transform hover:scale-105 active:scale-95 shadow-sm truncate text-center ${colorClass} ${PART_LEADERS.includes(member.name) ? 'ring-2 ring-yellow-400' : ''}`}
                     >
-                      {member.name}
+                      {PART_LEADERS.includes(member.name) ? '👑 ' : ''}{member.name}
                     </button>
                   ))}
                 </div>
@@ -647,7 +670,6 @@ function App() {
       {view === 'admin' && <AdminView setView={setView} seats={seats} setSeats={setSeats} />}
       {view === 'zone' && <ZoneView setView={setView} seats={seats} setHighlightedSeatId={setHighlightedSeatId} />}
 
-      {/* 모달창 유지 (맵에서 직접 클릭했을 때만 뜨도록) */}
       {selectedSeat && view === 'map' && (
         <div className="absolute inset-0 bg-black/80 flex items-end z-50 animate-in fade-in">
           <div className="w-full bg-gray-900 border-t border-gray-700 p-6 rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto">
