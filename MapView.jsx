@@ -5,6 +5,9 @@ function MapView({
 }) {
   const { useState, useRef, useEffect } = React;
   
+  // 파트장 명단
+  const PART_LEADERS = ['조경훈', '김종현', '김종오', '김흥섭', '김홍섭', '강선희', '김연섭', '이종민', '이종인', '정재문'];
+  
   // 💡 도화지를 광활하게 늘려서 Test실(-50)이 절대 짤리지 않습니다!
   const VIEW_X = -150; 
   const VIEW_Y = -100;
@@ -60,23 +63,46 @@ function MapView({
     const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
     setStartPos({ x: clientX - pos.x, y: clientY - pos.y });
   };
+  
   const onDrag = (e) => {
     if (!isDragging) return;
     const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
     const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-    setPos({ x: clientX - startPos.x, y: clientY - startPos.y });
+    
+    let newX = clientX - startPos.x;
+    let newY = clientY - startPos.y;
+
+    // 🛑 화면 밖으로 지도가 완전히 날아가지 않도록 방지 (Clamp 로직)
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+    const currentMapW = (isPhone ? VIEW_H : VIEW_W) * scale;
+    const currentMapH = (isPhone ? VIEW_W : VIEW_H) * scale;
+    const margin = 100;
+
+    const limitX = Math.max(0, (currentMapW - screenW) / 2) + margin;
+    const limitY = Math.max(0, (currentMapH - screenH) / 2) + margin;
+
+    const clampedX = Math.max(-limitX, Math.min(newX, limitX));
+    const clampedY = Math.max(-limitY, Math.min(newY, limitY));
+
+    setPos({ x: clampedX, y: clampedY });
   };
+  
   const endDrag = () => setIsDragging(false);
 
+  // 이전 단계에서 세분화했던 파스텔톤 컬러 테마 적용
   const getTeamColor = (team) => {
     if (!team) return '#E5E7EB';
     if (team === '상담' || team === '팀장') return '#FDE047'; 
+    if (team === '운영혁신' || team === '기획') return '#FCA5A5';
     if (team.includes('오토') || team === 'SSO') return '#D9F99D'; 
-    if (team === '솔포인트' || team === '발급') return '#86EFAC'; 
-    if (team === '재무') return '#BEF264'; 
-    if (team === '홈페이지' || team.includes('개발전담') || team === '올댓' || team === '전자문서') return '#A3E635'; 
-    if (team.includes('마이카') || team === '데이타비즈') return '#84CC16'; 
-    if (team.includes('모바일') || team.includes('디스커버')) return '#FCD34D'; 
+    if (team === '솔포인트' || team === '발급') return '#6EE7B7'; 
+    if (team === '재무') return '#67E8F9'; 
+    if (team.includes('개발전담')) return '#818CF8';
+    if (team === '홈페이지' || team === '전자문서' || team === '올댓') return '#93C5FD'; 
+    if (team.includes('마이카') || team === '데이타비즈') return '#C4B5FD'; 
+    if (team.includes('모바일') || team.includes('디스커버')) return '#F9A8D4'; 
+    if (team === '본부장' || team === '공용') return '#D1D5DB';
     return '#E5E7EB'; 
   };
 
@@ -135,15 +161,17 @@ function MapView({
       >
         <svg viewBox={`${VIEW_X} ${VIEW_Y} ${VIEW_W} ${VIEW_H}`} width="100%" height="100%">
           
-          <rect x="50" y="100" width="900" height="80" fill="#374151" rx="8" />
-          <text x="500" y="145" fill="#9CA3AF" fontSize="28" fontWeight="900" textAnchor="middle">E/V (엘리베이터)</text>
+          <rect x="50" y="100" width="1000" height="80" fill="#374151" rx="8" />
+          <text x="550" y="145" fill="#9CA3AF" fontSize="28" fontWeight="900" textAnchor="middle">E/V (엘리베이터)</text>
           
           {seatArray.map((seat) => {
             if (!seat.x || !seat.y) return null; 
 
             const isHighlighted = (highlightedSeatId === seat.id) || (recommendedSeats && recommendedSeats.includes(seat.id));
-            const strokeColor = isHighlighted ? '#EF4444' : '#111827';
-            const strokeWidth = isHighlighted ? '5' : '1.5';
+            const isPartLeader = PART_LEADERS.includes(seat.name); // 파트장 여부 확인
+
+            const strokeColor = isHighlighted ? '#EF4444' : (isPartLeader ? '#F59E0B' : '#111827');
+            const strokeWidth = isHighlighted ? '6' : (isPartLeader ? '3' : '1.5');
 
             return (
               <g 
@@ -154,7 +182,16 @@ function MapView({
                   alert(`[${seat.team}] ${seat.name} - 내선: ${seat.id}`);
                 }}
               >
+                {/* ✨ 파트장 전용 빛나는(pulse) 아우라 이펙트 */}
+                {isPartLeader && (
+                  <rect x="-4" y="-4" width="68" height="88" fill="none" stroke="#FBBF24" strokeWidth="4" rx="6" className="animate-pulse" />
+                )}
+
                 <rect width="60" height="80" fill={getTeamColor(seat.team)} rx="4" stroke={strokeColor} strokeWidth={strokeWidth} />
+                
+                {/* 👑 파트장 왕관 아이콘 */}
+                {isPartLeader && <text x="12" y="18" fontSize="12" textAnchor="middle">👑</text>}
+
                 <text x="30" y="22" fill="#111827" fontSize="12" fontWeight="800" textAnchor="middle">{seat.team}</text>
                 <text x="30" y="45" fill="#000" fontSize="16" fontWeight="900" textAnchor="middle">{seat.name}</text>
                 
@@ -162,6 +199,25 @@ function MapView({
                 
                 {isHighlighted && (
                   <circle cx="30" cy="-10" r="10" fill="#EF4444" className="animate-ping" />
+                )}
+
+                {/* 🔴🟡🟢 상태 뱃지 표시 */}
+                {seat.status && seat.status !== '공석' && (
+                  <g transform="translate(50, 10)">
+                    <circle r="8" fill="#111827" />
+                    <circle r="6" fill={
+                      seat.status === '근무중' ? '#22C55E' :  
+                      seat.status === '자리비움' ? '#EAB308' : 
+                      seat.status === '휴가' ? '#EF4444' : '#6B7280'
+                    } className={seat.status === '근무중' ? 'animate-pulse' : ''} />
+                  </g>
+                )}
+
+                {/* 💬 상태 메시지 표시 */}
+                {seat.status_message && (
+                  <text x="30" y="95" fill="#D1D5DB" fontSize="12" fontWeight="bold" textAnchor="middle">
+                    💬 {seat.status_message.length > 7 ? seat.status_message.slice(0, 7) + '..' : seat.status_message}
+                  </text>
                 )}
               </g>
             );

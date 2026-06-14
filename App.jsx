@@ -197,7 +197,9 @@ function MapView({
     }
   };
   
-  const handleMove = (e) => {
+const handleMove = (e) => {
+    let newX, newY;
+
     if (e.type === 'touchmove') {
       if (e.touches.length === 2 && pinchStart.dist > 0) {
         const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
@@ -206,11 +208,36 @@ function MapView({
         return;
       }
       if (!isDragging) return;
-      setViewState(prev => ({ ...prev, x: e.touches[0].clientX - startPos.x, y: e.touches[0].clientY - startPos.y }));
+      newX = e.touches[0].clientX - startPos.x;
+      newY = e.touches[0].clientY - startPos.y;
     } else {
       if (!isDragging) return;
-      setViewState(prev => ({ ...prev, x: e.clientX - startPos.x, y: e.clientY - startPos.y }));
+      newX = e.clientX - startPos.x;
+      newY = e.clientY - startPos.y;
     }
+
+    // 🛑 맵 전체 크기 (기존에 설정한 1650 x 900 기준)
+    const mapW = 1650;
+    const mapH = 900;
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+
+    // 📱 모바일(isPhone)일 때는 가로세로가 90도 뒤집힌 상태이므로 반대로 계산!
+    const currentMapW = (isPhone ? mapH : mapW) * viewState.scale;
+    const currentMapH = (isPhone ? mapW : mapH) * viewState.scale;
+
+    // 🧱 여유 공간 (화면 가장자리에서 빈 공간이 보일 수 있는 최대치 - 너무 꽉 막히면 답답하니까 100px 정도 줌)
+    const margin = 100;
+
+    // 📐 지도가 화면보다 크면 남는 공간만큼만 이동 허용, 화면보다 작으면 100px 밖으로 못 나가게 가둠
+    const limitX = Math.max(0, (currentMapW - screenW) / 2) + margin;
+    const limitY = Math.max(0, (currentMapH - screenH) / 2) + margin;
+
+    // 최종 좌표를 한계치(limit) 안으로 강제 고정 (Clamp)
+    const clampedX = Math.max(-limitX, Math.min(newX, limitX));
+    const clampedY = Math.max(-limitY, Math.min(newY, limitY));
+
+    setViewState(prev => ({ ...prev, x: clampedX, y: clampedY }));
   };
   
   const handleEnd = () => setIsDragging(false);
@@ -655,6 +682,14 @@ function App() {
   
   const [customMessage, setCustomMessage] = useState('');
   const [secondBrainData, setSecondBrainData] = useState({});
+  
+  useEffect(() => {
+    if (selectedSeat) {
+      setCustomMessage(seats[selectedSeat.id]?.status_message || '');
+    } else {
+      setCustomMessage('');
+    }
+  }, [selectedSeat?.id, seats]);
 
   const handleStatusChange = (id, newStatus) => {
     setSeats(prev => ({ ...prev, [id]: { ...(prev[id] || {}), status: newStatus, status_message: customMessage } }));
