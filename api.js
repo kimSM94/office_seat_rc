@@ -34,12 +34,18 @@ window.api = {
     const { data, error } = await window.supabase.from('employee_seats').select('*');
     if (error) throw error;
     
-    // DB의 numeric 타입 좌표를 화면 배치용 숫자로 변환하여 반환
-    return data.map(seat => ({
-      ...seat,
-      x: Number(seat.x),
-      y: Number(seat.y)
-    }));
+    // 💡 중요: DB에서 가져온 데이터가 배열인지 확인하고, 
+    // MapView에서 사용할 수 있게 객체(Dictionary) 형태로 변환해서 넘겨주는 게 좋습니다.
+    // 현재 App.jsx에서 setSeats를 객체로 받고 있으니까요!
+    const seatsObj = {};
+    data.forEach(seat => {
+      seatsObj[seat.id] = {
+        ...seat,
+        x: Number(seat.x),
+        y: Number(seat.y)
+      };
+    });
+    return seatsObj;
   },
 
   // ✨ [NEW] 파트장 명단 가져오기

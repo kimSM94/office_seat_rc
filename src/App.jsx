@@ -26,12 +26,12 @@ function App() {
       try {
         setIsLoading(true);
         const dataArray = await window.api.fetchSeats();
-        
+        console.log("DB에서 가져온 데이터:", result);
         // 배열 데이터를 기존 프론트엔드 구조인 객체(Dictionary) 형태로 변환
-        const seatsObj = {};
-        dataArray.forEach(seat => {
-          seatsObj[seat.id] = seat;
-        });
+        // const seatsObj = {};
+        // dataArray.forEach(seat => {
+        //   seatsObj[seat.id] = seat;
+        // });
         
         setSeats(seatsObj);
       } catch (error) {
