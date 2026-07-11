@@ -1,8 +1,6 @@
 name = "officeseatrc"
 compatibility_date = "2024-05-01"
 
-[build]
-command = "npm install && npm run build"
-
+# 별도의 빌드 과정 없이, 현재 폴더(.)에 있는 index.html을 그대로 서비스합니다.
 [assets]
-directory = "dist"
+directory = "."
