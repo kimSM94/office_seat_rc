@@ -1,7 +1,6 @@
-name = "ai-seat-map"
+name = "officeseatrc"
 compatibility_date = "2024-05-01"
 
-# 배포하기 전에 아래 명령어를 먼저 실행해서 dist 폴더를 만들어라!
 [build]
 command = "npm install && npm run build"
 
