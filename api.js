@@ -29,11 +29,35 @@ const sendDiscord = async (message) => {
 };
 
 window.api = {
-  // 1. 전체 좌석 데이터 가져오기
+  // 1. 전체 좌석 데이터 가져오기 (x, y 좌표를 숫자로 변환 추가)
   fetchSeats: async () => {
     const { data, error } = await window.supabase.from('employee_seats').select('*');
     if (error) throw error;
-    return data;
+    
+    // DB의 numeric 타입 좌표를 화면 배치용 숫자로 변환하여 반환
+    return data.map(seat => ({
+      ...seat,
+      x: Number(seat.x),
+      y: Number(seat.y)
+    }));
+  },
+
+  // ✨ [NEW] 파트장 명단 가져오기
+  fetchPartLeaders: async () => {
+    const { data, error } = await window.supabase.from('part_leaders').select('name');
+    if (error) throw error;
+    return data.map(leader => leader.name);
+  },
+
+  // ✨ [NEW] 좌석 정보 업데이트 (관리자 편집 후 저장용)
+  updateSeatData: async (id, updatedFields) => {
+    // updatedFields 예시: { x: 150, y: 300, name: '홍길동', team: '개발' }
+    const { error } = await window.supabase
+      .from('employee_seats')
+      .update(updatedFields)
+      .eq('id', id);
+      
+    if (error) throw error;
   },
 
   // 2. 좌석 상태(근무중/휴가 등) 업데이트
@@ -171,7 +195,7 @@ window.api = {
     return data;
   },
 
-  // 💡 기존 10번 함수를 세컨드 브레인 데이터도 받도록 수정합니다.
+  // 10. 세컨드 브레인 데이터 업데이트
   updateStatusWithMessage: async (id, newStatus, message, secondBrainData) => {
     const {
       error
@@ -180,7 +204,7 @@ window.api = {
       .update({
         status: newStatus,
         status_message: message,
-        second_brain: secondBrainData // 새로 추가된 컬럼
+        second_brain: secondBrainData 
       })
       .eq('id', id);
     if (error) throw error;
@@ -197,13 +221,13 @@ window.api = {
         },
         (payload) => {
           console.log('데이터 변경 감지됨!', payload);
-          callback(payload.new); // 변경된 최신 데이터를 리액트로 전달
+          callback(payload.new); 
         }
       )
       .subscribe();
   },
 
-// 12. 🍱 AI 맛집 탐험대 (카카오 API '진짜 맛집' 기반 추천)
+  // 12. 🍱 AI 맛집 탐험대
   triggerLunchMatch: async () => {
     if (!navigator.geolocation) {
       throw new Error("이 브라우저에서는 GPS 위치 정보를 지원하지 않습니다.");
@@ -215,7 +239,6 @@ window.api = {
         const lon = position.coords.longitude;
 
         try {
-         // 1. 카카오 API로 데이터 긁어오기
           const kakaoRes = await fetch(WORKER_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -223,11 +246,8 @@ window.api = {
           });
           
           const kakaoData = await kakaoRes.json();
-          
-          // 🚨 [여기에 CCTV 추가!] 카카오가 도대체 뭐라고 보냈는지 콘솔창에 찍어봅니다.
           console.log("🚨 카카오 API 응답 데이터:", kakaoData); 
 
-          // 🚨 [추가] 카카오가 식당 목록 대신 에러 코드를 보냈다면 화면에 띄웁니다.
           if (kakaoData.code || kakaoData.msg) {
             throw new Error(`카카오 에러: ${kakaoData.msg}`);
           }
@@ -236,15 +256,12 @@ window.api = {
             throw new Error("주변에 검색되는 카카오맵 맛집이 없습니다! (진짜 없는 경우)");
           }
 
-          // 2. 카카오에서 받은 정보 중 상위 5개를 깔끔한 텍스트로 정리
           const realPlaces = kakaoData.documents.slice(0, 5).map(place => 
             `- 식당명: ${place.place_name} (종류: ${place.category_name.split('>').pop().trim()}) / 거리: ${place.distance}m / 주소: ${place.road_address_name || place.address_name}`
           ).join('\n');
 
-          // 3. AI에게 "이 진짜 리스트 중에서만 골라서 추천해!" 라고 멱살 잡기
           const prompt = `내 주변에 실제로 있는 카카오맵 맛집 리스트 5개야.\n\n${realPlaces}\n\n반드시 이 진짜 리스트 안에 있는 식당 중에서만 3곳을 골라줘. 직장인 점심 식사로 왜 좋은지, 식당 이름과 거리를 포함해서 아주 유쾌하고 침 고이게 설명해줘. 절대로 목록에 없는 가상의 식당을 지어내면 안 돼!`;
 
-          // 4. OpenAI에 요청 전송
           const res = await fetch(WORKER_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -256,15 +273,13 @@ window.api = {
                   { role: 'system', content: '너는 팩트(Fact) 기반으로 점심 메뉴를 기가 막히게 추천해주는 사내 맛집 탐험대장이야.' },
                   { role: 'user', content: prompt }
                 ],
-                temperature: 0.5 // 창의성을 확 낮춰서 헛소리(환각) 차단
+                temperature: 0.5 
               }
             })
           });
 
           if (!res.ok) throw new Error("맛집 정보를 분석하는 중 에러가 발생했습니다.");
           const json = await res.json();
-          
-          // 최종 결과 화면으로 쏘기!
           resolve(json.choices[0].message.content);
 
         } catch (error) {
@@ -285,7 +300,6 @@ window.api = {
     2. 💻 업무 & 귀인운
     3. 🍀 럭키 아이템`;
 
-    // ❌ 이제 여기에 API 키가 없습니다! 보안 완벽!
     const res = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -303,12 +317,9 @@ window.api = {
     });
     
     if (!res.ok) throw new Error("운세를 불러오는 중 신기가 떨어졌습니다.");
-   const json = await res.json();
-    
-    // 💡 범인을 잡기 위해 콘솔창에 찍어보는 코드를 추가합니다!
+    const json = await res.json();
     console.log("🚨 Worker에서 온 데이터 확인:", json); 
 
-    // 에러가 있다면 화면에 띄워줍니다.
     if (json.error) {
       alert("API 에러 발생: " + (json.error.message || json.error));
       return;
@@ -343,11 +354,8 @@ window.api = {
     
     if (!res.ok) throw new Error("궁합을 분석하는 중 에러가 발생했습니다.");
     const json = await res.json();
-    
-    // 💡 범인을 잡기 위해 콘솔창에 찍어보는 코드를 추가합니다!
     console.log("🚨 Worker에서 온 데이터 확인:", json); 
 
-    // 에러가 있다면 화면에 띄워줍니다.
     if (json.error) {
       alert("API 에러 발생: " + (json.error.message || json.error));
       return;
@@ -385,5 +393,4 @@ window.api = {
     const json = await res.json();
     return json.choices[0].message.content;
   }
-
 };

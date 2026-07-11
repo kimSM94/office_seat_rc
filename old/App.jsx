@@ -197,7 +197,7 @@ function MapView({
     }
   };
   
-const handleMove = (e) => {
+  const handleMove = (e) => {
     let newX, newY;
 
     if (e.type === 'touchmove') {
@@ -226,7 +226,7 @@ const handleMove = (e) => {
     const currentMapW = (isPhone ? mapH : mapW) * viewState.scale;
     const currentMapH = (isPhone ? mapW : mapH) * viewState.scale;
 
-    // 🧱 여유 공간 (화면 가장자리에서 빈 공간이 보일 수 있는 최대치 - 너무 꽉 막히면 답답하니까 100px 정도 줌)
+    // 🧱 여유 공간 (화면 가장자리에서 빈 공간이 보일 수 있는 최대치)
     const margin = 100;
 
     // 📐 지도가 화면보다 크면 남는 공간만큼만 이동 허용, 화면보다 작으면 100px 밖으로 못 나가게 가둠
@@ -277,7 +277,7 @@ const handleMove = (e) => {
             <rect x="50" y="100" width="1000" height="80" fill="#374151" rx="8" />
             <text x="550" y="145" fill="#9CA3AF" fontSize="28" fontWeight="900" textAnchor="middle">E/V (엘리베이터)</text>
             
-           {seatArray.map((seat) => {
+            {seatArray.map((seat) => {
               if (!seat.x || !seat.y) return null; 
               
               const isHighlighted = (highlightedSeatId === seat.id) || searchedSeatIds.includes(seat.id);
@@ -305,6 +305,25 @@ const handleMove = (e) => {
                   <text x="30" y="68" fill="#4B5563" fontSize="14" fontWeight="900" textAnchor="middle">{seat.id}</text>
                   
                   {isHighlighted && <circle cx="30" cy="-10" r="12" fill="#EF4444" className="animate-ping" />}
+
+                  {/* 🔴🟡🟢 상태 뱃지 표시 */}
+                  {seat.status && seat.status !== '공석' && (
+                    <g transform="translate(50, 10)">
+                      <circle r="8" fill="#111827" />
+                      <circle r="6" fill={
+                        seat.status === '근무중' ? '#22C55E' :  
+                        seat.status === '자리비움' ? '#EAB308' : 
+                        seat.status === '휴가' ? '#EF4444' : '#6B7280'
+                      } className={seat.status === '근무중' ? 'animate-pulse' : ''} />
+                    </g>
+                  )}
+
+                  {/* 💬 상태 메시지 표시 */}
+                  {seat.status_message && (
+                    <text x="30" y="95" fill="#D1D5DB" fontSize="12" fontWeight="bold" textAnchor="middle">
+                      💬 {seat.status_message.length > 7 ? seat.status_message.slice(0, 7) + '..' : seat.status_message}
+                    </text>
+                  )}
                 </g>
               );
             })}
@@ -418,7 +437,7 @@ function Home({ setView, user }) {
         <h1 className="text-4xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-500">
           Smart Office
         </h1>
-        <p className="text-gray-400">환영합니다, <span className="font-bold text-white">{user?.name}</span>님!</p>
+        <p className="text-gray-400">환영합니다, <span className="font-bold text-white">{user?.id || '게스트'}</span>님!</p>
       </div>
 
       <div className="w-full max-w-md space-y-4 z-10">
@@ -674,7 +693,11 @@ function ZoneView({ setView, seats, setHighlightedSeatId }) {
 // 5. 메인 App 컴포넌트
 // ==========================================
 function App() {
-  const [user, setUser] = useState({ name: '관리자' }); 
+  const [user, setUser] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const empId = params.get('id');
+    return { id: empId }; // URL에 파라미터가 없으면 undefined 상태
+  });
   const [view, setView] = useState('home'); 
   const [seats, setSeats] = useState({});
   const [selectedSeat, setSelectedSeat] = useState(null);
@@ -682,7 +705,7 @@ function App() {
   
   const [customMessage, setCustomMessage] = useState('');
   const [secondBrainData, setSecondBrainData] = useState({});
-  
+
   useEffect(() => {
     if (selectedSeat) {
       setCustomMessage(seats[selectedSeat.id]?.status_message || '');
@@ -693,10 +716,10 @@ function App() {
 
   const handleStatusChange = (id, newStatus) => {
     setSeats(prev => ({ ...prev, [id]: { ...(prev[id] || {}), status: newStatus, status_message: customMessage } }));
-    setSelectedSeat(null);
   };
 
-  const isMySeat = selectedSeat?.name === user?.name;
+  // 🔒 권한 체크: URL 파라미터로 받은 사번(id)과 선택한 좌석의 id가 일치하는지 확인 (관리자는 예외)
+  const isMySeat = selectedSeat?.id === user?.id || user?.id === 'admin';
 
   return (
     <div className="h-full flex flex-col relative bg-gray-900 text-white">
@@ -744,12 +767,70 @@ function App() {
                 );
               })()}
 
-              <div className="mb-4"><input type="text" placeholder="현재 상태 메시지" className="w-full p-3 bg-gray-800 rounded-xl border border-gray-700 text-sm focus:border-blue-500 focus:outline-none" value={customMessage} onChange={(e) => setCustomMessage(e.target.value)} /></div>
-              <div className="grid grid-cols-3 gap-2 pb-4">
-                <button onClick={() => handleStatusChange(selectedSeat.id, '근무중')} className="p-3 bg-gray-800 rounded-xl font-bold text-sm hover:border-green-500 border border-gray-700 transition-colors">🟢 근무중</button>
-                <button onClick={() => handleStatusChange(selectedSeat.id, '자리비움')} className="p-3 bg-gray-800 rounded-xl font-bold text-sm hover:border-yellow-500 border border-gray-700 transition-colors">🟡 자리비움</button>
-                <button onClick={() => handleStatusChange(selectedSeat.id, '휴가')} className="p-3 bg-gray-800 rounded-xl font-bold text-sm hover:border-red-500 border border-gray-700 transition-colors">🔴 휴가</button>
-              </div>
+              {/* === 권한에 따른 상태 변경 UI 노출 === */}
+              {isMySeat ? (
+                <>
+                  <div className="mb-4">
+                    <input 
+                      type="text" 
+                      placeholder="현재 상태 메시지를 입력하세요" 
+                      className="w-full p-3 bg-gray-800 rounded-xl border border-gray-700 text-sm focus:border-blue-500 focus:outline-none" 
+                      value={customMessage} 
+                      onChange={(e) => setCustomMessage(e.target.value)} 
+                    />
+                  </div>
+                  
+                  {(() => {
+                    const currentStatus = seats[selectedSeat.id]?.status;
+
+                    return (
+                      <div className="grid grid-cols-3 gap-2 pb-4">
+                        <button 
+                          onClick={() => handleStatusChange(selectedSeat.id, '근무중')} 
+                          className={`p-3 rounded-xl font-bold text-sm transition-all border ${
+                            currentStatus === '근무중' 
+                              ? 'bg-green-900/40 border-green-500 text-green-400 ring-2 ring-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.2)]' 
+                              : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-green-500/50 hover:text-gray-200'
+                          }`}
+                        >
+                          🟢 근무중
+                        </button>
+                        <button 
+                          onClick={() => handleStatusChange(selectedSeat.id, '자리비움')} 
+                          className={`p-3 rounded-xl font-bold text-sm transition-all border ${
+                            currentStatus === '자리비움' 
+                              ? 'bg-yellow-900/40 border-yellow-500 text-yellow-400 ring-2 ring-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.2)]' 
+                              : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-yellow-500/50 hover:text-gray-200'
+                          }`}
+                        >
+                          🟡 자리비움
+                        </button>
+                        <button 
+                          onClick={() => handleStatusChange(selectedSeat.id, '휴가')} 
+                          className={`p-3 rounded-xl font-bold text-sm transition-all border ${
+                            currentStatus === '휴가' 
+                              ? 'bg-red-900/40 border-red-500 text-red-400 ring-2 ring-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
+                              : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-red-500/50 hover:text-gray-200'
+                          }`}
+                        >
+                          🔴 휴가
+                        </button>
+                      </div>
+                    );
+                  })()}
+                </>
+              ) : (
+                /* 내 자리가 아닐 때는 수정 불가, 보기 모드만 제공 */
+                <div className="mt-2 p-4 bg-gray-800/30 rounded-xl border border-gray-700 text-center">
+                  <p className="text-gray-400 text-sm">
+                    {seats[selectedSeat.id]?.status_message 
+                      ? `💬 ${seats[selectedSeat.id].status_message}` 
+                      : "상태 메시지가 없습니다."}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">※ 본인의 좌석만 상태를 변경할 수 있습니다.</p>
+                </div>
+              )}
+
             </div>
           </div>
         </div>
