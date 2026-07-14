@@ -1,7 +1,7 @@
 function MapView({ 
   setView, seats, setSelectedSeat, 
   searchQuery, setSearchQuery, 
-  highlightedSeatId, isAdmin // 👑 App.jsx에서 넘겨준 isAdmin 권한 추가
+  highlightedSeatId, isAdmin
 }) {
   const { useState, useEffect, useRef } = React;
   const [viewState, setViewState] = useState({ x: 0, y: 0, scale: 1 });
@@ -15,11 +15,6 @@ function MapView({
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [pinchStart, setPinchStart] = useState({ dist: 0, scale: 1 });
-  
-  // 👑 [NEW] 관리자 좌석 드래그 편집용 상태
-  const [seatDrag, setSeatDrag] = useState({ id: null, startX: 0, startY: 0, initialSeatX: 0, initialSeatY: 0, hasMoved: false });
-  const [editedPositions, setEditedPositions] = useState({});
-  const [isSaving, setIsSaving] = useState(false);
 
   const containerRef = useRef(null);
 
@@ -65,26 +60,6 @@ function MapView({
     return () => element.removeEventListener('wheel', handleWheel);
   }, []);
 
-  // 👑 [NEW] 좌석 터치/클릭 시작 핸들러
-  const handleSeatStart = (e, seat, currentX, currentY) => {
-    if (!isAdmin) return;
-    e.stopPropagation(); // 좌석을 잡았을 땐 지도 이동 이벤트 방지
-    
-    // 이벤트 타입 안전 검사
-    const isTouch = e.type && typeof e.type === 'string' && e.type.includes('touch');
-    const clientX = isTouch ? e.touches[0].clientX : e.clientX;
-    const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-    
-    setSeatDrag({
-      id: seat.id,
-      startX: clientX,
-      startY: clientY,
-      initialSeatX: currentX,
-      initialSeatY: currentY,
-      hasMoved: false
-    });
-  };
-
   const handleStart = (e) => {
     if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') return;
     
@@ -121,30 +96,6 @@ function MapView({
       clientY = e.clientY;
     }
 
-    // 👑 [NEW] 관리자가 좌석을 드래그 중인 경우 (좌표 변환 로직)
-    if (seatDrag.id) {
-      const dx = clientX - seatDrag.startX;
-      const dy = clientY - seatDrag.startY;
-      
-      // 조금이라도 움직였다면 클릭(상세보기) 방지
-      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-        setSeatDrag(prev => ({ ...prev, hasMoved: true }));
-      }
-
-      let newX, newY;
-      if (isPhone) {
-        newX = seatDrag.initialSeatX + (dy / viewState.scale);
-        newY = seatDrag.initialSeatY - (dx / viewState.scale);
-      } else {
-        newX = seatDrag.initialSeatX + (dx / viewState.scale);
-        newY = seatDrag.initialSeatY + (dy / viewState.scale);
-      }
-
-      setEditedPositions(prev => ({ ...prev, [seatDrag.id]: { x: newX, y: newY } }));
-      return; // 맵 이동 로직은 실행하지 않음
-    }
-
-    // 기존 지도 이동 로직
     if (!isDragging) return;
     const newX = clientX - startPos.x;
     const newY = clientY - startPos.y;
@@ -168,9 +119,6 @@ function MapView({
   };
   
   const handleEnd = () => {
-    if (seatDrag.id) {
-      setSeatDrag({ id: null, startX: 0, startY: 0, initialSeatX: 0, initialSeatY: 0, hasMoved: false });
-    }
     setIsDragging(false);
   };
 
@@ -178,7 +126,6 @@ function MapView({
     const query = (searchQuery !== undefined ? searchQuery : localQuery || '').trim().toLowerCase();
     if (!query) return setSearchedSeatIds([]);
     
-    // 에러 방지를 위해 name, team, id 값을 확실하게 문자열로 변환한 뒤 검색
     const matches = seatArray.filter(s => {
       const safeName = String(s.name || '').toLowerCase();
       const safeTeam = String(s.team || '').toLowerCase();
@@ -195,27 +142,6 @@ function MapView({
     setLocalQuery(val);
   };
 
-  // 👑 [NEW] 변경된 좌석 DB에 저장
-  const handleSavePositions = async () => {
-    setIsSaving(true);
-    try {
-      const updates = Object.entries(editedPositions).map(([id, pos]) => 
-        window.api.updateSeatData(id, { x: pos.x, y: pos.y })
-      );
-      await Promise.all(updates);
-      
-      alert('좌석 배치가 성공적으로 저장되었습니다!');
-      setEditedPositions({});
-      window.location.reload(); // 저장 후 변경된 데이터를 다시 불러오기 위해 새로고침
-    } catch (error) {
-      alert('저장 중 오류가 발생했습니다: ' + error.message);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const hasEdits = Object.keys(editedPositions).length > 0;
-
   return (
     <div 
       ref={containerRef} className="fixed inset-0 bg-[#1A202C] overflow-hidden" style={{ touchAction: 'none' }}
@@ -230,45 +156,20 @@ function MapView({
         </div>
       </div>
 
-      {/* 👑 [NEW] 관리자 전용 저장 버튼 */}
-      {isAdmin && hasEdits && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom flex gap-3 pointer-events-auto">
-          <button 
-            onClick={handleSavePositions} 
-            disabled={isSaving}
-            className="bg-green-500 hover:bg-green-400 text-white px-6 py-3 rounded-2xl font-black shadow-[0_0_20px_rgba(34,197,94,0.4)] flex items-center gap-2 transition-all"
-          >
-            {isSaving ? '⏳ 저장 중...' : '💾 변경된 자리 저장'}
-          </button>
-          <button 
-            onClick={() => setEditedPositions({})} 
-            className="bg-gray-600 hover:bg-gray-500 text-white px-5 py-3 rounded-2xl font-bold shadow-lg transition-all"
-          >
-            취소
-          </button>
-        </div>
-      )}
-
-      <svg className="w-full h-full absolute inset-0 touch-none" style={{ cursor: isDragging ? 'grabbing' : (seatDrag.id ? 'grabbing' : 'grab') }}>
+      <svg className="w-full h-full absolute inset-0 touch-none" style={{ cursor: isDragging ? 'grabbing' : 'grab' }}>
         <g transform={`translate(${center.x + viewState.x}, ${center.y + viewState.y}) scale(${viewState.scale}) ${isPhone ? 'rotate(90)' : ''}`}>
           <g transform="translate(-830, -405)">
             <rect x="50" y="100" width="1000" height="80" fill="#374151" rx="8" />
             <text x="550" y="145" fill="#9CA3AF" fontSize="28" fontWeight="900" textAnchor="middle">E/V (엘리베이터)</text>
             
             {seatArray.map((seat) => {
-              // DB에서 받아온 x, y 좌표에 편집 중인 오프셋을 덮어씌움
-              const seatX = editedPositions[seat.id]?.x ?? seat.x;
-              const seatY = editedPositions[seat.id]?.y ?? seat.y;
+              const seatX = seat.x;
+              const seatY = seat.y;
               
               if (!seatX || !seatY) return null; 
               
-              // 에러 방지: searchedSeatIds가 무조건 배열이도록 보장
               const isHighlighted = (highlightedSeatId === seat.id) || (Array.isArray(searchedSeatIds) && searchedSeatIds.includes(seat.id));
-              
-              // 에러 방지: PART_LEADERS가 무조건 배열이도록 보장
               const isPartLeader = Array.isArray(window.PART_LEADERS) && seat.name ? window.PART_LEADERS.includes(seat.name) : false;
-              
-              // 에러 방지: getTeamTheme 함수가 없을 경우 기본 색상 반환
               const theme = typeof window.getTeamTheme === 'function' ? window.getTeamTheme(seat.team) : { hex: '#4B5563', tw: 'bg-gray-500 text-white' };
               
               const strokeColor = isHighlighted ? '#EF4444' : (isPartLeader ? '#F59E0B' : '#111827');
@@ -276,13 +177,9 @@ function MapView({
 
               return (
                 <g key={seat.id} transform={`translate(${seatX}, ${seatY})`} 
-                  style={{ cursor: isAdmin ? 'move' : 'pointer' }}
-                  onMouseDown={(e) => handleSeatStart(e, seat, seatX, seatY)}
-                  onTouchStart={(e) => handleSeatStart(e, seat, seatX, seatY)}
+                  style={{ cursor: 'pointer' }}
                   onClick={(e) => { 
                     e.stopPropagation(); 
-                    // 드래그를 한 경우엔 모달이 열리지 않도록 차단
-                    if (seatDrag.id === seat.id && seatDrag.hasMoved) return;
                     setSelectedSeat(seat); 
                   }}
                 >
