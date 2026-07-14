@@ -121,7 +121,7 @@ function App() {
             : 'border-transparent text-gray-500 hover:text-gray-300'
         }`}
       >
-        {isAdmin ? '👑 관리자 끄기' : '⚙️ 관리자 로그인'}
+        {isAdmin ? 'LOGOUT' : '⚙️ ADMIN'}
       </button>
 
       {isLoading ? (

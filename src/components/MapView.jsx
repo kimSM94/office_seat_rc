@@ -12,13 +12,13 @@ function MapView({
   const [localQuery, setLocalQuery] = useState("");
   const [searchedSeatIds, setSearchedSeatIds] = useState([]);
 
+  // 지도 이동(패닝) 및 줌을 위한 상태 복구!
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [pinchStart, setPinchStart] = useState({ dist: 0, scale: 1 });
 
   const containerRef = useRef(null);
 
-  // DB에서 받아온 객체 형태의 seats를 배열로 변환하여 사용
   const seatArray = Object.values(seats || {});
 
   useEffect(() => {
@@ -45,6 +45,7 @@ function MapView({
     return () => window.removeEventListener('resize', fitMap);
   }, []);
 
+  // 마우스 휠 확대/축소 로직
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
@@ -60,6 +61,7 @@ function MapView({
     return () => element.removeEventListener('wheel', handleWheel);
   }, []);
 
+  // 🗺️ 지도 전체 이동(드래그) 시작
   const handleStart = (e) => {
     if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') return;
     
@@ -78,6 +80,7 @@ function MapView({
     }
   };
   
+  // 🗺️ 지도 움직일 때 (줌 & 이동)
   const handleMove = (e) => {
     let clientX, clientY;
 
@@ -96,6 +99,7 @@ function MapView({
       clientY = e.clientY;
     }
 
+    // 지도 이동 로직 (화면 밖으로 너무 벗어나지 않게 제한)
     if (!isDragging) return;
     const newX = clientX - startPos.x;
     const newY = clientY - startPos.y;
@@ -145,10 +149,13 @@ function MapView({
   return (
     <div 
       ref={containerRef} className="fixed inset-0 bg-[#1A202C] overflow-hidden" style={{ touchAction: 'none' }}
+      // 지도 이동을 위한 이벤트 부활!
       onMouseDown={handleStart} onMouseMove={handleMove} onMouseUp={handleEnd} onMouseLeave={handleEnd}
       onTouchStart={handleStart} onTouchMove={handleMove} onTouchEnd={handleEnd}
     >
-      <div className="absolute top-4 left-4 z-50 flex flex-col gap-2 pointer-events-none w-full max-w-md">
+      
+      {/* 검색창 UI는 fixed로 고정되어서 안 움직임 */}
+      <div className="fixed top-4 left-4 z-[60] flex flex-col gap-2 pointer-events-none w-full max-w-md">
         <div className="flex flex-row items-center gap-2 pointer-events-auto">
           <button onClick={() => setView('home')} className="bg-[#374151] text-white w-11 h-11 rounded-lg font-black text-xl border border-gray-500 shadow-md flex items-center justify-center flex-shrink-0 active:bg-gray-600">🔙</button>
           <input type="text" value={actualQuery} onChange={(e) => updateQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && executeLocalSearch()} placeholder="이름/팀 검색" className="w-32 sm:w-48 px-3 py-2 h-11 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:border-blue-500 font-bold text-sm shadow-md" />
@@ -156,6 +163,7 @@ function MapView({
         </div>
       </div>
 
+      {/* 지도 영역: 이동(패닝) 시 커서가 grabbing(움켜쥔 손) 모양으로 변함 */}
       <svg className="w-full h-full absolute inset-0 touch-none" style={{ cursor: isDragging ? 'grabbing' : 'grab' }}>
         <g transform={`translate(${center.x + viewState.x}, ${center.y + viewState.y}) scale(${viewState.scale}) ${isPhone ? 'rotate(90)' : ''}`}>
           <g transform="translate(-830, -405)">
@@ -163,6 +171,7 @@ function MapView({
             <text x="550" y="145" fill="#9CA3AF" fontSize="28" fontWeight="900" textAnchor="middle">E/V (엘리베이터)</text>
             
             {seatArray.map((seat) => {
+              // 좌석 x, y 좌표는 무조건 DB 데이터 기준! (개별 이동 불가)
               const seatX = seat.x;
               const seatY = seat.y;
               
