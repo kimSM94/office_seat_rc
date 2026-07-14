@@ -4,7 +4,7 @@ function App() {
   const [user, setUser] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const empId = params.get('id');
-    return { id: empId }; // URL에 파라미터가 없으면 undefined 상태
+    return { id: empId }; 
   });
   
   // 👑 관리자 권한 및 로딩 상태 추가
@@ -20,63 +20,56 @@ function App() {
   const [customMessage, setCustomMessage] = useState('');
   const [secondBrainData, setSecondBrainData] = useState({});
 
-  // 1️⃣ [NEW] 앱 실행 시 DB에서 좌석 데이터 불러오기
+  // 👑 [NEW] 관리자 팝업창 내 이름/팀 수정용 상태
+  const [editName, setEditName] = useState('');
+  const [editTeam, setEditTeam] = useState('');
+  const [isSavingInfo, setIsSavingInfo] = useState(false);
+
   useEffect(() => {
     const loadSeats = async () => {
       try {
         setIsLoading(true);
-        // api.js에서 데이터를 불러옵니다.
         const rawData = await window.api.fetchSeats();
         console.log("✅ DB에서 가져온 원본 데이터:", rawData); 
         
-        // 화면에서 쓰기 좋게 객체(Dictionary) 형태로 변환
         let finalSeats = {};
-        
         if (Array.isArray(rawData)) {
-          // 배열로 들어오면 객체로 변환
           rawData.forEach(seat => {
-            finalSeats[seat.id] = {
-              ...seat,
-              x: Number(seat.x),
-              y: Number(seat.y)
-            };
+            finalSeats[seat.id] = { ...seat, x: Number(seat.x), y: Number(seat.y) };
           });
         } else {
-          // 이미 객체로 들어오면 그대로 사용
           finalSeats = rawData;
         }
-        
         setSeats(finalSeats);
-        
       } catch (error) {
         console.error("좌석 데이터를 불러오는데 실패했습니다:", error);
       } finally {
         setIsLoading(false);
       }
     };
-
     loadSeats();
   }, []);
 
+  // 팝업창 열릴 때 수정 폼 초기화
   useEffect(() => {
     if (selectedSeat) {
       setCustomMessage(seats[selectedSeat.id]?.status_message || '');
+      setEditName(selectedSeat.name || '');
+      setEditTeam(selectedSeat.team || '');
     } else {
       setCustomMessage('');
     }
-  }, [selectedSeat?.id, seats]);
+  }, [selectedSeat?.id]); // 좌석이 바뀔 때만 실행되도록 수정
 
-  // 2️⃣ [NEW] 관리자 로그인 처리 로직
   const handleAdminLogin = (e) => {
     e.preventDefault();
     const id = e.target.adminId.value;
     const pw = e.target.adminPw.value;
 
-    // TODO: 실제 서비스 시 DB 검증으로 변경하거나 비밀번호를 복잡하게 설정하세요.
     if (id === 'admin' && pw === 'admin1234') { 
       setIsAdmin(true);
       setShowAdminModal(false);
-      alert('관리자 모드가 활성화되었습니다. 좌석 배치를 수정할 수 있습니다.');
+      alert('관리자 모드가 활성화되었습니다.');
     } else {
       alert('관리자 정보가 일치하지 않습니다.');
     }
@@ -86,13 +79,33 @@ function App() {
     setSeats(prev => ({ ...prev, [id]: { ...(prev[id] || {}), status: newStatus, status_message: customMessage } }));
   };
 
-  // 👑 관리자이거나 본인 자리일 때만 수정 가능하도록 조건 업데이트
+  // 👑 [NEW] 팝업창에서 이름/팀 수정 후 DB에 저장하는 함수
+  const handleUpdateSeatInfo = async () => {
+    if (!selectedSeat) return;
+    setIsSavingInfo(true);
+    try {
+      await window.api.updateSeatData(selectedSeat.id, { name: editName, team: editTeam });
+      
+      // 화면 즉시 반영
+      setSeats(prev => ({
+        ...prev,
+        [selectedSeat.id]: { ...(prev[selectedSeat.id] || {}), name: editName, team: editTeam }
+      }));
+      setSelectedSeat(prev => ({ ...prev, name: editName, team: editTeam }));
+      
+      alert('이름과 팀 정보가 성공적으로 수정되었습니다!');
+    } catch (error) {
+      alert('수정 실패: ' + error.message);
+    } finally {
+      setIsSavingInfo(false);
+    }
+  };
+
   const isMySeat = selectedSeat?.id === user?.id || user?.id === 'admin' || isAdmin;
 
   return (
     <div className="h-full flex flex-col relative bg-gray-900 text-white min-h-screen">
       
-      {/* 👑 우측 상단 숨겨진 관리자 진입 버튼 (다크 테마에 맞게 흐리게 배치) */}
       <button 
         onClick={() => setShowAdminModal(true)}
         className="absolute top-4 right-4 text-xs text-gray-600 hover:text-gray-400 z-40 transition-colors"
@@ -100,7 +113,6 @@ function App() {
         {isAdmin ? '👑 관리자 켜짐' : '⚙️ 관리자'}
       </button>
 
-      {/* 로딩 중일 때 표시할 UI */}
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-gray-400 animate-pulse font-bold">오피스 데이터를 불러오는 중입니다...</div>
@@ -108,28 +120,65 @@ function App() {
       ) : (
         <>
           {view === 'home' && <Home setView={setView} user={user} />}
-          {/* Admin 권한을 자식 컴포넌트에 넘겨줍니다 */}
           {view === 'map' && <MapView setView={setView} seats={seats} setSelectedSeat={setSelectedSeat} highlightedSeatId={highlightedSeatId} isAdmin={isAdmin} />}
           {view === 'admin' && <AdminView setView={setView} seats={seats} setSeats={setSeats} isAdmin={isAdmin} />}
           {view === 'zone' && <ZoneView setView={setView} seats={seats} setHighlightedSeatId={setHighlightedSeatId} />}
         </>
       )}
 
-      {/* 좌석 상세 정보 모달 (기존 코드와 동일) */}
       {selectedSeat && view === 'map' && (
         <div className="absolute inset-0 bg-black/80 flex items-end z-50 animate-in fade-in">
           <div className="w-full bg-gray-900 border-t border-gray-700 p-6 rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto">
+            
             <div className="flex justify-between items-start mb-6">
-              <div>
-                <h3 className="text-2xl font-black flex items-center gap-2">
-                  {selectedSeat.name || '공석'} 
-                  {selectedSeat.status && selectedSeat.status !== '공석' && (
-                    <span className="text-xs bg-gray-800 px-2 py-1 rounded-full text-blue-400 font-normal border border-gray-700">{selectedSeat.status}</span>
-                  )}
-                </h3>
-                <p className="text-gray-500 mt-1">{selectedSeat.id}석 · {selectedSeat.team}</p>
+              <div className="flex-1 mr-4">
+                {/* 👑 [NEW] 관리자 권한에 따른 헤더 UI 분기 처리 */}
+                {isAdmin ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="text" 
+                        value={editName} 
+                        onChange={(e) => setEditName(e.target.value)} 
+                        placeholder="이름"
+                        className="text-2xl font-black bg-gray-800 border border-gray-600 rounded-lg px-3 py-1 text-white w-40 focus:border-blue-500 outline-none"
+                      />
+                      {selectedSeat.status && selectedSeat.status !== '공석' && (
+                        <span className="text-xs bg-gray-800 px-2 py-1 rounded-full text-blue-400 font-normal border border-gray-700">{selectedSeat.status}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-gray-500 font-bold">{selectedSeat.id}석 · </span>
+                      <input 
+                        type="text" 
+                        value={editTeam} 
+                        onChange={(e) => setEditTeam(e.target.value)} 
+                        placeholder="소속 팀"
+                        className="text-sm bg-gray-800 border border-gray-600 rounded-lg px-2 py-1 text-white w-32 focus:border-blue-500 outline-none"
+                      />
+                      {/* 변경사항이 있을 때만 활성화되는 저장 버튼 */}
+                      <button 
+                        onClick={handleUpdateSeatInfo}
+                        disabled={isSavingInfo || (editName === selectedSeat.name && editTeam === selectedSeat.team)}
+                        className="ml-2 bg-blue-600 disabled:bg-gray-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow-md active:bg-blue-500 transition-colors"
+                      >
+                        {isSavingInfo ? '⏳ 저장중' : '💾 정보 저장'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <h3 className="text-2xl font-black flex items-center gap-2">
+                      {selectedSeat.name || '공석'} 
+                      {selectedSeat.status && selectedSeat.status !== '공석' && (
+                        <span className="text-xs bg-gray-800 px-2 py-1 rounded-full text-blue-400 font-normal border border-gray-700">{selectedSeat.status}</span>
+                      )}
+                    </h3>
+                    <p className="text-gray-500 mt-1">{selectedSeat.id}석 · {selectedSeat.team}</p>
+                  </div>
+                )}
               </div>
-              <button onClick={() => { setSelectedSeat(null); setHighlightedSeatId(null); }} className="text-2xl text-gray-500 hover:text-white p-2 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center">✕</button>
+              <button onClick={() => { setSelectedSeat(null); setHighlightedSeatId(null); }} className="text-2xl text-gray-500 hover:text-white p-2 bg-gray-800 rounded-full w-10 h-10 flex flex-shrink-0 items-center justify-center transition-colors">✕</button>
             </div>
             
             <div className="space-y-4">
@@ -222,7 +271,6 @@ function App() {
         </div>
       )}
 
-      {/* 3️⃣ [NEW] 관리자 로그인 모달 UI (다크 테마 적용) */}
       {showAdminModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] animate-in fade-in">
           <form onSubmit={handleAdminLogin} className="bg-gray-800 border border-gray-700 p-8 rounded-3xl shadow-2xl w-80">
