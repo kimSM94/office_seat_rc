@@ -107,10 +107,21 @@ function App() {
     <div className="h-full flex flex-col relative bg-gray-900 text-white min-h-screen">
       
       <button 
-        onClick={() => setShowAdminModal(true)}
-        className="absolute top-4 right-4 text-xs text-gray-600 hover:text-gray-400 z-40 transition-colors"
+        onClick={() => {
+          if (isAdmin) {
+            setIsAdmin(false); // 켜져 있으면 끄기
+            alert('관리자 모드가 종료되었습니다.');
+          } else {
+            setShowAdminModal(true); // 꺼져 있으면 로그인 창 띄우기
+          }
+        }}
+        className={`absolute top-4 right-4 text-xs z-40 transition-colors px-3 py-1.5 rounded-lg border ${
+          isAdmin 
+            ? 'bg-gray-800 border-yellow-600/50 text-yellow-500 hover:bg-gray-700' 
+            : 'border-transparent text-gray-500 hover:text-gray-300'
+        }`}
       >
-        {isAdmin ? '👑 관리자 켜짐' : '⚙️ 관리자'}
+        {isAdmin ? '👑 관리자 끄기' : '⚙️ 관리자 로그인'}
       </button>
 
       {isLoading ? (

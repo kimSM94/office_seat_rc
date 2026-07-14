@@ -94,9 +94,9 @@ function Home({ setView, user }) {
   return (
     <div className="h-full flex flex-col items-center justify-center p-6 bg-gray-900 text-white animate-in fade-in relative overflow-hidden">
       
-      <button onClick={() => setView('admin')} className="absolute top-6 right-6 text-xs text-gray-400 hover:text-white font-bold bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-xl border border-gray-700 transition-colors flex items-center gap-1 shadow-md z-50">
+      {/* <button onClick={() => setView('admin')} className="absolute top-6 right-6 text-xs text-gray-400 hover:text-white font-bold bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-xl border border-gray-700 transition-colors flex items-center gap-1 shadow-md z-50">
         ⚙️ 관리자 모드
-      </button>
+      </button> */}
 
       <div className="text-center mb-10 z-10">
         <h1 className="text-4xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-500">
