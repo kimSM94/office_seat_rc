@@ -24,7 +24,7 @@ function MapView({
   const containerRef = useRef(null);
 
   // DB에서 받아온 객체 형태의 seats를 배열로 변환하여 사용
-  const seatArray = Object.values(seats);
+  const seatArray = Object.values(seats || {});
 
   useEffect(() => {
     const fitMap = () => {
@@ -69,8 +69,11 @@ function MapView({
   const handleSeatStart = (e, seat, currentX, currentY) => {
     if (!isAdmin) return;
     e.stopPropagation(); // 좌석을 잡았을 땐 지도 이동 이벤트 방지
-    const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-    const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+    
+    // 이벤트 타입 안전 검사
+    const isTouch = e.type && typeof e.type === 'string' && e.type.includes('touch');
+    const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+    const clientY = isTouch ? e.touches[0].clientY : e.clientY;
     
     setSeatDrag({
       id: seat.id,
@@ -172,9 +175,17 @@ function MapView({
   };
 
   const executeLocalSearch = () => {
-    const query = (searchQuery !== undefined ? searchQuery : localQuery).trim().toLowerCase();
+    const query = (searchQuery !== undefined ? searchQuery : localQuery || '').trim().toLowerCase();
     if (!query) return setSearchedSeatIds([]);
-    const matches = seatArray.filter(s => (s.name||'').toLowerCase().includes(query) || (s.team||'').toLowerCase().includes(query) || (s.id||'').toLowerCase().includes(query));
+    
+    // 에러 방지를 위해 name, team, id 값을 확실하게 문자열로 변환한 뒤 검색
+    const matches = seatArray.filter(s => {
+      const safeName = String(s.name || '').toLowerCase();
+      const safeTeam = String(s.team || '').toLowerCase();
+      const safeId = String(s.id || '').toLowerCase();
+      
+      return safeName.includes(query) || safeTeam.includes(query) || safeId.includes(query);
+    });
     setSearchedSeatIds(matches.map(m => m.id));
   };
 
@@ -251,8 +262,14 @@ function MapView({
               
               if (!seatX || !seatY) return null; 
               
-              const isHighlighted = (highlightedSeatId === seat.id) || searchedSeatIds.includes(seat.id);
-              const isPartLeader = window.PART_LEADERS.includes(seat.name); 
+              // 에러 방지: searchedSeatIds가 무조건 배열이도록 보장
+              const isHighlighted = (highlightedSeatId === seat.id) || (Array.isArray(searchedSeatIds) && searchedSeatIds.includes(seat.id));
+              
+              // 에러 방지: PART_LEADERS가 무조건 배열이도록 보장
+              const isPartLeader = Array.isArray(window.PART_LEADERS) && seat.name ? window.PART_LEADERS.includes(seat.name) : false;
+              
+              // 에러 방지: getTeamTheme 함수가 없을 경우 기본 색상 반환
+              const theme = typeof window.getTeamTheme === 'function' ? window.getTeamTheme(seat.team) : { hex: '#4B5563', tw: 'bg-gray-500 text-white' };
               
               const strokeColor = isHighlighted ? '#EF4444' : (isPartLeader ? '#F59E0B' : '#111827');
               const strokeWidth = isHighlighted ? '6' : (isPartLeader ? '3' : '1.5'); 
@@ -274,13 +291,13 @@ function MapView({
                     <rect x="-4" y="-4" width="68" height="88" fill="none" stroke="#FBBF24" strokeWidth="4" rx="6" className="animate-pulse" />
                   )}
 
-                  <rect width="60" height="80" fill={window.getTeamTheme(seat.team).hex} rx="4" stroke={strokeColor} strokeWidth={strokeWidth} />
+                  <rect width="60" height="80" fill={theme.hex} rx="4" stroke={strokeColor} strokeWidth={strokeWidth} />
                   
                   {isPartLeader && <text x="12" y="18" fontSize="12" textAnchor="middle">👑</text>}
 
-                  <text x="30" y="22" fill="#111827" fontSize="12" fontWeight="900" textAnchor="middle">{seat.team}</text>
-                  <text x="30" y="45" fill="#000" fontSize="16" fontWeight="900" textAnchor="middle">{seat.name}</text>
-                  <text x="30" y="68" fill="#4B5563" fontSize="14" fontWeight="900" textAnchor="middle">{seat.id}</text>
+                  <text x="30" y="22" fill="#111827" fontSize="12" fontWeight="900" textAnchor="middle">{seat.team || ''}</text>
+                  <text x="30" y="45" fill="#000" fontSize="16" fontWeight="900" textAnchor="middle">{seat.name || ''}</text>
+                  <text x="30" y="68" fill="#4B5563" fontSize="14" fontWeight="900" textAnchor="middle">{seat.id || ''}</text>
                   
                   {isHighlighted && <circle cx="30" cy="-10" r="12" fill="#EF4444" className="animate-ping" />}
 
