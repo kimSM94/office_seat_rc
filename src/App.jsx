@@ -25,15 +25,29 @@ function App() {
     const loadSeats = async () => {
       try {
         setIsLoading(true);
-        const dataArray = await window.api.fetchSeats();
-        console.log("DB에서 가져온 데이터:", result);
-        // 배열 데이터를 기존 프론트엔드 구조인 객체(Dictionary) 형태로 변환
-        // const seatsObj = {};
-        // dataArray.forEach(seat => {
-        //   seatsObj[seat.id] = seat;
-        // });
+        // api.js에서 데이터를 불러옵니다.
+        const rawData = await window.api.fetchSeats();
+        console.log("✅ DB에서 가져온 원본 데이터:", rawData); 
         
-        setSeats(seatsObj);
+        // 화면에서 쓰기 좋게 객체(Dictionary) 형태로 변환
+        let finalSeats = {};
+        
+        if (Array.isArray(rawData)) {
+          // 배열로 들어오면 객체로 변환
+          rawData.forEach(seat => {
+            finalSeats[seat.id] = {
+              ...seat,
+              x: Number(seat.x),
+              y: Number(seat.y)
+            };
+          });
+        } else {
+          // 이미 객체로 들어오면 그대로 사용
+          finalSeats = rawData;
+        }
+        
+        setSeats(finalSeats);
+        
       } catch (error) {
         console.error("좌석 데이터를 불러오는데 실패했습니다:", error);
       } finally {
