@@ -370,6 +370,34 @@ window.api = {
     return json.choices[0].message.content;
   },
 
+  // 🌴 휴가 관리 API
+  fetchVacations: async () => {
+    const { data, error } = await window.supabase.from('vacations').select('*');
+    if (error) throw error;
+    return data;
+  },
+
+  addVacation: async (emp_id, start_date, end_date) => {
+    const { error } = await window.supabase.from('vacations').insert([{ emp_id, start_date, end_date }]);
+    if (error) throw error;
+  },
+
+  deleteVacation: async (id) => {
+    const { error } = await window.supabase.from('vacations').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  // 🧠 Second Brain 데이터 저장 API
+  updateBrainData: async (id, data) => {
+    // DB 테이블 구조에 따라 'second_brain' 컬럼 업데이트
+    const { error } = await window.supabase
+      .from('employee_seats')
+      .update({ second_brain: data })
+      .eq('id', id);
+    if (error) throw error;
+    return true;
+  },
+  
   // 15. 🏢 팀 전체 궁합 보기
   getTeamChemistry: async (members) => {
     const membersText = members.map(m => `${m.name}(${m.birth})`).join(', ');

@@ -116,6 +116,14 @@ function Home({ setView, user }) {
         
         <button onClick={() => setView('map')} className="w-full p-5 bg-gray-800 hover:bg-gray-700 rounded-2xl font-bold text-lg border border-gray-700 transition-all flex items-center justify-center gap-2">🗺️ 오피스 전체 지도 보기</button>
         <button onClick={() => setView('zone')} className="w-full p-5 bg-gray-800 hover:bg-gray-700 rounded-2xl font-bold text-lg border border-gray-700 transition-all flex items-center justify-center gap-2">🏢 부서별/구역별 현황</button>
+        <button 
+            onClick={() => setView('calendar')} 
+            className="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-3xl p-8 flex flex-col items-center justify-center shadow-2xl transition-transform hover:scale-105 active:scale-95 mt-4 w-full"
+          >
+            <div className="text-4xl mb-3">📅</div>
+            <div className="font-black text-lg">휴가 및 일정 캘린더</div>
+            <div className="text-xs text-gray-400 mt-2">프리랜서 및 직원 휴가 등록</div>
+        </button>
       </div>
 
       {isSajuLoading && (
