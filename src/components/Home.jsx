@@ -102,7 +102,7 @@ function Home({ setView, user }) {
         <h1 className="text-4xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-500">
           Smart Office
         </h1>
-        <p className="text-gray-400">환영합니다, <span className="font-bold text-white">{user?.id || '게스트'}</span>님!</p>
+        <p className="text-gray-400">환영합니다, <span className="font-bold text-white">{user?.id || '김상민'}</span>님!</p>
       </div>
 
       <div className="w-full max-w-md space-y-4 z-10">
@@ -114,7 +114,7 @@ function Home({ setView, user }) {
           🍱 AI 맛집 탐험대
         </button>
         
-        <button onClick={() => setView('map')} className="w-full p-5 bg-gray-800 hover:bg-gray-700 rounded-2xl font-bold text-lg border border-gray-700 transition-all flex items-center justify-center gap-2">🗺️ 오피스 전체 지도 보기</button>
+        <button onClick={() => setView('floors')} className="w-full p-5 bg-gray-800 hover:bg-gray-700 rounded-2xl font-bold text-lg border border-gray-700 transition-all flex items-center justify-center gap-2">🗺️ 오피스 전체 지도 보기</button>
         <button onClick={() => setView('zone')} className="w-full p-5 bg-gray-800 hover:bg-gray-700 rounded-2xl font-bold text-lg border border-gray-700 transition-all flex items-center justify-center gap-2">🏢 부서별/구역별 현황</button>
         <button 
             onClick={() => setView('calendar')} 

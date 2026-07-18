@@ -23,8 +23,8 @@ function App() {
   const [editTeam, setEditTeam] = useState('');
   const [isSavingInfo, setIsSavingInfo] = useState(false);
 
-  // 💡 달력(Home 화면)과 좌석 빨간불을 위한 휴가 데이터 유지
   const [vacations, setVacations] = useState([]);
+  const [selectedFloor, setSelectedFloor] = useState(15);
 
   useEffect(() => {
     const loadData = async () => {
@@ -67,12 +67,15 @@ function App() {
     }
   }, [selectedSeat?.id, seats]);
 
+  // 💡 [수정됨] 관리자 아이디를 '김상민'으로 변경!
   const handleAdminLogin = (e) => {
     e.preventDefault();
     const id = e.target.adminId.value;
     const pw = e.target.adminPw.value;
-    if (id === 'admin' && pw === 'admin1234') { 
-      setIsAdmin(true); setShowAdminModal(false); alert('관리자 모드가 활성화되었습니다.');
+    
+    // 아이디가 '김상민' 일 때만 관리자로 로그인됩니다.
+    if (id === '김상민' && pw === 'admin1234') { 
+      setIsAdmin(true); setShowAdminModal(false); alert('관리자(김상민) 모드가 활성화되었습니다.');
     } else {
       alert('관리자 정보가 일치하지 않습니다.');
     }
@@ -97,7 +100,7 @@ function App() {
     }
   };
 
-  const isMySeat = selectedSeat?.id === user?.id || user?.id === 'admin' || isAdmin;
+  const isMySeat = selectedSeat?.id === user?.id || user?.id === '김상민' || isAdmin;
 
   return (
     <div className="h-full flex flex-col relative bg-[#1A202C] text-white min-h-screen">
@@ -107,11 +110,11 @@ function App() {
           if (isAdmin) { setIsAdmin(false); alert('관리자 모드가 종료되었습니다.'); }
           else { setShowAdminModal(true); }
         }}
-        className={`absolute top-4 right-4 text-xs z-[70] transition-colors px-3 py-1.5 rounded-lg border shadow-sm ${
+        className={`fixed top-4 right-4 text-xs z-[70] transition-colors px-3 py-1.5 rounded-lg border shadow-sm ${
           isAdmin ? 'bg-gray-800 border-yellow-600/50 text-yellow-500 hover:bg-gray-700' : 'bg-gray-900/80 border-gray-700 text-gray-400 hover:text-gray-200 backdrop-blur-md'
         }`}
       >
-        {isAdmin ? '👑 관리자 끄기' : '⚙️ 관리자 로그인'}
+        {isAdmin ? '👑 로그아웃' : '⚙️ 로그인'}
       </button>
 
       {isLoading ? (
@@ -119,44 +122,50 @@ function App() {
       ) : (
         <>
           {view === 'home' && <Home setView={setView} user={user} />}
-          {view === 'map' && <MapView setView={setView} seats={seats} setSelectedSeat={setSelectedSeat} highlightedSeatId={highlightedSeatId} isAdmin={isAdmin} vacations={vacations} />}
+          {view === 'floors' && <FloorSelectView setView={setView} setSelectedFloor={setSelectedFloor} />}
+          {view === 'map' && <MapView setView={setView} seats={seats} setSeats={setSeats} setSelectedSeat={setSelectedSeat} highlightedSeatId={highlightedSeatId} isAdmin={isAdmin} vacations={vacations} selectedFloor={selectedFloor} />}
           {view === 'admin' && <AdminView setView={setView} seats={seats} setSeats={setSeats} isAdmin={isAdmin} />}
+          {view === 'zone' && <ZoneView setView={setView} seats={seats} setHighlightedSeatId={setHighlightedSeatId} />}
           {view === 'calendar' && <CalendarView setView={setView} vacations={vacations} setVacations={setVacations} seats={seats} isAdmin={isAdmin} user={user} />}
         </>
       )}
 
       {selectedSeat && view === 'map' && (
-        <div className="absolute inset-0 bg-black/80 flex items-end z-50 animate-in fade-in">
-          <div className="w-full bg-gray-900 border-t border-gray-700 p-6 rounded-t-3xl shadow-2xl max-h-[70vh] overflow-y-auto">
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex-1 mr-4">
+        <div className="fixed inset-0 bg-black/80 flex items-end z-50 animate-in fade-in">
+          <div className="w-full bg-gray-900 border-t border-gray-700 rounded-t-3xl shadow-2xl max-h-[70vh] flex flex-col overflow-hidden">
+            
+            <div className="flex justify-between items-center p-4 border-b border-gray-700/50 bg-gray-900 rounded-t-3xl shrink-0 z-10 w-full">
+              <div className="flex flex-1 items-center gap-3 overflow-x-auto whitespace-nowrap pr-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {isAdmin ? (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="이름" className="text-2xl font-black bg-gray-800 border border-gray-600 rounded-lg px-3 py-1 text-white w-40 focus:border-blue-500 outline-none" />
-                      {selectedSeat.status && selectedSeat.status !== '공석' && (<span className="text-xs bg-gray-800 px-2 py-1 rounded-full text-blue-400 font-normal border border-gray-700">{selectedSeat.status}</span>)}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-gray-500 font-bold">{selectedSeat.id}석 · </span>
-                      <input type="text" value={editTeam} onChange={(e) => setEditTeam(e.target.value)} placeholder="소속 팀" className="text-sm bg-gray-800 border border-gray-600 rounded-lg px-2 py-1 text-white w-32 focus:border-blue-500 outline-none" />
-                      <button onClick={handleUpdateSeatInfo} disabled={isSavingInfo || (editName === selectedSeat.name && editTeam === selectedSeat.team)} className="ml-2 bg-blue-600 disabled:bg-gray-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow-md active:bg-blue-500 transition-colors">
-                        {isSavingInfo ? '⏳ 저장중' : '💾 정보 저장'}
-                      </button>
-                    </div>
-                  </div>
+                  <>
+                    <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="이름" className="text-lg font-black bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-white w-28 focus:border-blue-500 outline-none shrink-0" />
+                    {selectedSeat.status && selectedSeat.status !== '공석' && (<span className="text-[11px] bg-gray-800 px-2 py-1 rounded-full text-blue-400 font-normal border border-gray-700 shrink-0">{selectedSeat.status}</span>)}
+                    <span className="text-gray-400 font-bold text-sm shrink-0">사번: {selectedSeat.id}</span>
+                    <input type="text" value={editTeam} onChange={(e) => setEditTeam(e.target.value)} placeholder="소속 팀" className="text-sm bg-gray-800 border border-gray-600 rounded-lg px-2 py-1.5 text-white w-24 focus:border-blue-500 outline-none shrink-0" />
+                    <button onClick={handleUpdateSeatInfo} disabled={isSavingInfo || (editName === selectedSeat.name && editTeam === selectedSeat.team)} className="bg-blue-600 disabled:bg-gray-700 text-white text-sm px-4 py-1.5 rounded-lg font-bold shadow-md active:bg-blue-500 transition-colors shrink-0">{isSavingInfo ? '⏳' : '💾 정보 저장'}</button>
+                    <button onClick={async () => {
+                        if (window.confirm(`정말 [${selectedSeat.name || '공석'}] 좌석을 완전히 삭제하시겠습니까?`)) {
+                          try {
+                            await window.api.deleteSeat(selectedSeat.id);
+                            setSeats(prev => { const newSeats = { ...prev }; delete newSeats[selectedSeat.id]; return newSeats; });
+                            setSelectedSeat(null); alert('좌석이 삭제되었습니다.');
+                          } catch(e) { alert('삭제 실패: ' + e.message); }
+                        }
+                      }} className="bg-red-900/50 text-red-400 hover:bg-red-500 hover:text-white text-sm px-4 py-1.5 rounded-lg font-bold transition-colors shrink-0">삭제</button>
+                  </>
                 ) : (
-                  <div>
-                    <h3 className="text-2xl font-black flex items-center gap-2">
-                      {selectedSeat.name || '공석'} {selectedSeat.status && selectedSeat.status !== '공석' && (<span className="text-xs bg-gray-800 px-2 py-1 rounded-full text-blue-400 font-normal border border-gray-700">{selectedSeat.status}</span>)}
-                    </h3>
-                    <p className="text-gray-500 mt-1">{selectedSeat.id}석 · {selectedSeat.team}</p>
-                  </div>
+                  <>
+                    <h3 className="text-xl font-black flex items-center shrink-0">{selectedSeat.name || '공석'}</h3>
+                    {selectedSeat.status && selectedSeat.status !== '공석' && (<span className="text-[11px] bg-gray-800 px-2 py-1 rounded-full text-blue-400 font-normal border border-gray-700 shrink-0">{selectedSeat.status}</span>)}
+                    <span className="text-gray-400 text-sm font-bold shrink-0 ml-1">사번: {selectedSeat.id}</span>
+                    <span className="text-gray-500 text-sm shrink-0 ml-1">{selectedSeat.team}</span>
+                  </>
                 )}
               </div>
-              <button onClick={() => { setSelectedSeat(null); setHighlightedSeatId(null); }} className="text-2xl text-gray-500 hover:text-white p-2 bg-gray-800 rounded-full w-10 h-10 flex flex-shrink-0 items-center justify-center transition-colors">✕</button>
+              <button onClick={() => { setSelectedSeat(null); setHighlightedSeatId(null); }} className="text-lg text-gray-500 hover:text-white p-2 bg-gray-800 rounded-full w-9 h-9 flex flex-shrink-0 items-center justify-center transition-colors shadow-md ml-2">✕</button>
             </div>
             
-            <div className="space-y-4">
+            <div className="p-6 overflow-y-auto space-y-4">
               {(() => {
                 const currentBrain = secondBrainData[selectedSeat.id] || { focus: '', todos: '', links: '' };
                 const updateBrain = (field, value) => setSecondBrainData(prev => ({ ...prev, [selectedSeat.id]: { ...currentBrain, [field]: value } }));
@@ -187,9 +196,7 @@ function App() {
 
               {isMySeat ? (
                 <>
-                  <div className="mb-4">
-                    <input type="text" placeholder="현재 상태 메시지를 입력하세요" className="w-full p-3 bg-gray-800 rounded-xl border border-gray-700 text-sm focus:border-blue-500 focus:outline-none" value={customMessage} onChange={(e) => setCustomMessage(e.target.value)} />
-                  </div>
+                  <div className="mb-4"><input type="text" placeholder="현재 상태 메시지를 입력하세요" className="w-full p-3 bg-gray-800 rounded-xl border border-gray-700 text-sm focus:border-blue-500 focus:outline-none" value={customMessage} onChange={(e) => setCustomMessage(e.target.value)} /></div>
                   {(() => {
                     const currentStatus = seats[selectedSeat.id]?.status;
                     return (
@@ -207,7 +214,6 @@ function App() {
                   <p className="text-xs text-gray-500 mt-2">※ 본인의 좌석만 상태를 변경할 수 있습니다.</p>
                 </div>
               )}
-              {/* 🛑 불필요한 휴가 등록 UI는 완전히 삭제되었습니다! */}
             </div>
           </div>
         </div>
@@ -216,8 +222,9 @@ function App() {
       {showAdminModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] animate-in fade-in">
           <form onSubmit={handleAdminLogin} className="bg-gray-800 border border-gray-700 p-8 rounded-3xl shadow-2xl w-80">
-            <h2 className="text-xl font-bold mb-6 text-white text-center">⚙️ 관리자 로그인</h2>
-            <input type="text" name="adminId" placeholder="아이디" className="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl mb-3 text-white focus:border-blue-500 outline-none" required />
+            <h2 className="text-xl font-bold mb-6 text-white text-center">⚙️ 로그인</h2>
+            {/* 💡 힌트 메시지 추가 */}
+            <input type="text" name="adminId" placeholder="아이디 (ex: 김상민)" className="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl mb-3 text-white focus:border-blue-500 outline-none" required />
             <input type="password" name="adminPw" placeholder="비밀번호" className="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl mb-6 text-white focus:border-blue-500 outline-none" required />
             <div className="flex gap-3">
               <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-colors">로그인</button>

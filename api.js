@@ -397,6 +397,25 @@ window.api = {
     if (error) throw error;
     return true;
   },
+
+  // 🛠️ [NEW] 맵 빌더용 좌석 관리 API
+  addSeat: async (seatData) => {
+    const { data, error } = await window.supabase.from('employee_seats').insert([seatData]).select();
+    if (error) throw error;
+    return data[0];
+  },
+  
+  updateSeatPosition: async (id, x, y) => {
+    const { error } = await window.supabase.from('employee_seats').update({ x, y }).eq('id', id);
+    if (error) throw error;
+    return true;
+  },
+
+  deleteSeat: async (id) => {
+    const { error } = await window.supabase.from('employee_seats').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  },
   
   // 15. 🏢 팀 전체 궁합 보기
   getTeamChemistry: async (members) => {
