@@ -123,6 +123,15 @@ function Home({ setView, user }) {
             <div className="text-4xl mb-3">📅</div>
             <div className="font-black text-lg">휴가 및 일정 캘린더</div>
             <div className="text-xs text-gray-400 mt-2">프리랜서 및 직원 휴가 등록</div>
+            
+        </button>
+        <button 
+          onClick={() => setView('stats')} 
+          className="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-3xl p-8 flex flex-col items-center justify-center shadow-2xl transition-transform hover:scale-105 active:scale-95 w-full mt-4"
+        >
+          <div className="text-4xl mb-3">📊</div>
+          <div className="font-black text-lg">휴가 통계 및 잔여일수</div>
+          <div className="text-xs text-gray-400 mt-2">직원별 남은 연차 자동 계산</div>
         </button>
       </div>
 

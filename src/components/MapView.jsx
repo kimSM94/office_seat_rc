@@ -1,7 +1,8 @@
 function MapView({ 
   setView, seats, setSeats, setSelectedSeat, 
   searchQuery, setSearchQuery, 
-  highlightedSeatId, isAdmin, vacations, selectedFloor 
+  highlightedSeatId, isAdmin, vacations, selectedFloor,
+  user
 }) {
   const { useState, useEffect, useRef } = React;
   const [viewState, setViewState] = useState({ x: 0, y: 0, scale: 1 });
@@ -166,7 +167,9 @@ function MapView({
     const matches = seatArray.filter(s => {
       const safeName = String(s.name || '').toLowerCase();
       const safeTeam = String(s.team || '').toLowerCase();
-      return safeName.includes(query) || safeTeam.includes(query);
+      // 사번 검색도 가능하도록 추가
+      const safeEmpId = String(s.emp_id || s.id || '').toLowerCase();
+      return safeName.includes(query) || safeTeam.includes(query) || safeEmpId.includes(query);
     });
     setSearchedSeatIds(matches.map(m => m.id));
   };
@@ -210,13 +213,25 @@ function MapView({
       onMouseDown={handleStart} onMouseMove={handleMove} onMouseUp={handleEnd} onMouseLeave={handleEnd}
       onTouchStart={handleStart} onTouchMove={handleMove} onTouchEnd={handleEnd}
     >
+      <style>
+        {`
+          @keyframes path-flow {
+            from { stroke-dashoffset: 24; }
+            to { stroke-dashoffset: 0; }
+          }
+          .animate-path {
+            animation: path-flow 0.8s linear infinite;
+          }
+        `}
+      </style>
+
       <div className="fixed top-4 left-4 z-[60] flex flex-col gap-2 pointer-events-none w-full max-w-md">
         <div className="flex flex-row items-center gap-2 pointer-events-auto flex-wrap">
           <button onClick={() => setView('floors')} className="bg-[#374151] text-white w-11 h-11 rounded-lg font-black text-xl border border-gray-500 shadow-md flex items-center justify-center flex-shrink-0 active:bg-gray-600">🔙</button>
           
           <div className="flex items-center gap-2 bg-gray-800 p-1.5 rounded-lg border border-gray-600 shadow-md">
             <span className="text-blue-400 font-black px-2">{selectedFloor}F</span>
-            <input type="text" value={actualQuery} onChange={(e) => updateQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && executeLocalSearch()} placeholder="이름 검색" className="w-24 sm:w-32 bg-transparent text-white focus:outline-none font-bold text-sm" />
+            <input type="text" value={actualQuery} onChange={(e) => updateQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && executeLocalSearch()} placeholder="이름/사번 검색" className="w-24 sm:w-32 bg-transparent text-white focus:outline-none font-bold text-sm" />
             <button onClick={executeLocalSearch} className="bg-blue-600 text-white font-bold px-3 py-1.5 rounded-md text-sm active:bg-blue-500">검색</button>
           </div>
           
@@ -236,16 +251,77 @@ function MapView({
           <g transform="translate(-830, -405)">
             <rect x="50" y="100" width="1000" height="80" fill="#374151" rx="8" />
             <text x="550" y="145" fill="#9CA3AF" fontSize="28" fontWeight="900" textAnchor="middle">E/V (엘리베이터) - {selectedFloor}층</text>
+            
+            {/* 🗺️ 길찾기 렌더링 */}
+            {(() => {
+              // 1. 내 자리 (출발지) 찾기 (사번 우선, 그다음 id, 관리자면 김상민)
+              let mySeat = Object.values(seats).find(s => s.emp_id === user?.id || s.id === user?.id);
+              if (!mySeat && isAdmin) {
+                mySeat = Object.values(seats).find(s => s.name === '김상민');
+              }
+              
+              const targetSeat = searchedSeatIds.length > 0 ? seats[searchedSeatIds[0]] : null;
+              
+              if (mySeat && targetSeat && mySeat.id !== targetSeat.id) {
+                const startX = mySeat.x + 30; 
+                const startY = mySeat.y + 40; 
+                const endX = targetSeat.x + 30;
+                const endY = targetSeat.y + 40;
 
+                const hasRightNeighbor = (seat) => seatArray.some(s => Math.abs(s.y - seat.y) < 20 && s.x > seat.x && s.x < seat.x + 90);
+                const hasLeftNeighbor = (seat) => seatArray.some(s => Math.abs(s.y - seat.y) < 20 && s.x < seat.x && s.x > seat.x - 90);
+
+                const getAisleX = (seat) => {
+                    if (hasRightNeighbor(seat)) return seat.x - 25; 
+                    if (hasLeftNeighbor(seat)) return seat.x + 85;  
+                    return seat.x - 25; 
+                };
+
+                const startAisleX = getAisleX(mySeat);
+                const endAisleX = getAisleX(targetSeat);
+
+                let pathD = "";
+                if (Math.abs(startAisleX - endAisleX) < 40) {
+                    const avgAisleX = (startAisleX + endAisleX) / 2;
+                    pathD = `M ${startX} ${startY} L ${avgAisleX} ${startY} L ${avgAisleX} ${endY} L ${endX} ${endY}`;
+                } else {
+                    const topHallwayY = 190; 
+                    pathD = `M ${startX} ${startY} L ${startAisleX} ${startY} L ${startAisleX} ${topHallwayY} L ${endAisleX} ${topHallwayY} L ${endAisleX} ${endY} L ${endX} ${endY}`;
+                }
+
+                return (
+                  <g className="route-layer" style={{ pointerEvents: 'none' }}>
+                    <path d={pathD} fill="none" stroke="#2563EB" strokeWidth="8" strokeLinejoin="round" opacity="0.3" />
+                    <path d={pathD} fill="none" stroke="#60A5FA" strokeWidth="4" strokeLinejoin="round" strokeDasharray="12 12" className="animate-path" />
+                    <g transform={`translate(${startX}, ${startY - 15})`}>
+                      <circle cx="0" cy="-15" r="14" fill="#22C55E" />
+                      <polygon points="-5,-6 5,-6 0,2" fill="#22C55E" />
+                      <text x="0" y="-11" fill="white" fontSize="11" fontWeight="bold" textAnchor="middle">출발</text>
+                    </g>
+                    <g transform={`translate(${endX}, ${endY - 15})`}>
+                      <circle cx="0" cy="-15" r="14" fill="#EF4444" className="animate-pulse" />
+                      <polygon points="-5,-6 5,-6 0,2" fill="#EF4444" />
+                      <text x="0" y="-11" fill="white" fontSize="11" fontWeight="bold" textAnchor="middle">도착</text>
+                    </g>
+                  </g>
+                );
+              }
+              return null;
+            })()}
+            
+            {/* 좌석 렌더링 영역 */}
             {seatArray.map((seat) => {
               const seatX = seat.x;
               const seatY = seat.y;
               if (seatX === undefined || seatY === undefined) return null; 
               
-              const isOnVacation = (vacations || []).some(v => v.emp_id === seat.id && v.start_date <= todayStr && v.end_date >= todayStr);
+              // 💡 휴가 여부 판별 시 진짜 사번(emp_id)까지 완벽하게 비교!
+              const isOnVacation = (vacations || []).some(v => 
+                (v.emp_id === seat.emp_id || v.emp_id === seat.id) && 
+                v.start_date <= todayStr && v.end_date >= todayStr
+              );
               const currentStatus = isOnVacation ? '휴가' : seat.status;
               
-              // 💡 검색된 좌석인지 확인
               const isSearched = Array.isArray(searchedSeatIds) && searchedSeatIds.includes(seat.id);
               const isHighlighted = (highlightedSeatId === seat.id) || isSearched;
               
@@ -276,18 +352,6 @@ function MapView({
                     <text x="30" y="45" fill="#000" fontSize="16" fontWeight="900" textAnchor="middle">{seat.name || ''}</text>
                     <text x="30" y="68" fill="#4B5563" fontSize="14" fontWeight="900" textAnchor="middle">{seat.id || ''}</text>
                     
-                    {/* 기존 빨간 핑 애니메이션 유지 */}
-                    {isHighlighted && <circle cx="30" cy="-10" r="12" fill="#EF4444" className="animate-ping" />}
-                    
-                    {/* 🎯 [NEW] 검색 시 시선을 확 끄는 Bouncing 파란색 화살표 추가! */}
-                    {isSearched && (
-                      <g className="animate-bounce">
-                        {/* 화살표 몸통 (좌석의 최상단(30, -5)을 가리키는 디자인) */}
-                        <path d="M 22 -35 L 38 -35 L 38 -20 L 48 -20 L 30 -2 L 12 -20 L 22 -20 Z" fill="#3B82F6" stroke="#FFFFFF" strokeWidth="2" />
-                        <text x="30" y="-42" fill="#60A5FA" fontSize="14" fontWeight="900" textAnchor="middle">HERE!</text>
-                      </g>
-                    )}
-
                     {currentStatus && currentStatus !== '공석' && (
                       <g transform="translate(50, 10)">
                         <circle r="8" fill="#111827" />
@@ -295,7 +359,7 @@ function MapView({
                           currentStatus === '근무중' ? '#22C55E' :  
                           currentStatus === '자리비움' ? '#EAB308' : 
                           currentStatus === '휴가' ? '#EF4444' : '#6B7280'
-                        } className={currentStatus === '근무중' ? 'animate-pulse' : ''} />
+                        } />
                       </g>
                     )}
                   </g>

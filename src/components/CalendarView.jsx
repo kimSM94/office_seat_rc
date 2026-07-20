@@ -10,7 +10,6 @@ function CalendarView({ setView, vacations, setVacations, seats, isAdmin, user }
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = new Date(year, month, 1).getDay();
 
-  // 오늘 날짜 계산 (파란색 동그라미 표시용)
   const todayObj = new Date();
   const todayYear = todayObj.getFullYear();
   const todayMonth = todayObj.getMonth();
@@ -18,6 +17,12 @@ function CalendarView({ setView, vacations, setVacations, seats, isAdmin, user }
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+
+  // 💡 [NEW] DB에 저장된 사번(또는 ID)으로 좌석 정보를 찾아오는 헬퍼 함수
+  const getEmpInfo = (targetId) => {
+    const seat = Object.values(seats).find(s => s.emp_id === targetId || s.id === targetId);
+    return seat || { name: targetId, team: '팀 정보 없음' };
+  };
 
   const handleDateClick = (dateStr) => {
     if (!isAdmin && !user?.id) {
@@ -51,7 +56,6 @@ function CalendarView({ setView, vacations, setVacations, seats, isAdmin, user }
     }
   };
 
-  // 현재 보고 있는 달에 속한 휴가만 필터링 후 날짜순 정렬 (하단 리스트용)
   const currentMonthVacations = vacations.filter(v => {
     const vStart = new Date(v.start_date);
     const vEnd = new Date(v.end_date);
@@ -60,7 +64,6 @@ function CalendarView({ setView, vacations, setVacations, seats, isAdmin, user }
     return vStart <= viewEnd && vEnd >= viewStart;
   }).sort((a,b) => a.start_date.localeCompare(b.start_date));
 
-  // 요일 배열 구하기 (하단 리스트 렌더링용)
   const getDayName = (dateStr) => {
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     return days[new Date(dateStr).getDay()];
@@ -69,71 +72,52 @@ function CalendarView({ setView, vacations, setVacations, seats, isAdmin, user }
   return (
     <div className="absolute inset-0 bg-[#121212] overflow-y-auto z-50 flex flex-col animate-in fade-in text-gray-100 font-sans">
       
-      {/* 📱 앱 스타일 상단 헤더 */}
       <div className="sticky top-0 z-10 bg-[#121212]/95 backdrop-blur-md flex items-center justify-center p-4 border-b border-gray-800">
-        <button 
-          onClick={() => setView('home')} 
-          className="absolute left-4 p-2 text-2xl text-gray-400 hover:text-white transition-colors"
-        >
-          ‹
-        </button>
+        <button onClick={() => setView('home')} className="absolute left-4 p-2 text-2xl text-gray-400 hover:text-white transition-colors">‹</button>
         <h2 className="text-lg font-bold">휴가 및 일정</h2>
       </div>
 
       <div className="max-w-4xl mx-auto w-full flex flex-col flex-1 pb-10">
-        
-        {/* 📅 월 이동 네비게이션 */}
         <div className="flex items-center justify-center gap-12 py-6">
           <button onClick={prevMonth} className="text-blue-500 p-2 text-xl hover:bg-gray-800 rounded-full transition-colors">‹</button>
           <h3 className="text-[17px] text-blue-500 font-medium tracking-wide">{month + 1}월 {year}</h3>
           <button onClick={nextMonth} className="text-blue-500 p-2 text-xl hover:bg-gray-800 rounded-full transition-colors">›</button>
         </div>
 
-        {/* 🗓️ 메인 달력 영역 (테두리 없음, 깔끔한 텍스트 위주) */}
         <div className="px-2">
           <div className="grid grid-cols-7 text-center text-xs font-medium text-gray-400 mb-4">
             <div className="text-red-400">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
           </div>
 
           <div className="grid grid-cols-7 gap-y-6 mb-8">
-            {/* 빈 칸 채우기 */}
             {Array.from({ length: firstDayOfMonth }).map((_, i) => (
               <div key={`empty-${i}`} className="min-h-[80px]"></div>
             ))}
             
-            {/* 실제 날짜 렌더링 */}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const d = i + 1;
               const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
               const dayVacations = vacations.filter(v => v.start_date <= dateStr && v.end_date >= dateStr);
               const dayOfWeek = new Date(year, month, d).getDay();
-              
               const isToday = (year === todayYear && month === todayMonth && d === todayDate);
 
               return (
-                <div 
-                  key={d} 
-                  onClick={() => handleDateClick(dateStr)}
-                  className="flex flex-col items-center min-h-[80px] cursor-pointer group"
-                >
-                  {/* 날짜 숫자 (오늘이면 파란 동그라미) */}
+                <div key={d} onClick={() => handleDateClick(dateStr)} className="flex flex-col items-center min-h-[80px] cursor-pointer group">
                   <div className={`w-8 h-8 flex items-center justify-center text-[15px] rounded-full mb-1 transition-all ${
-                    isToday 
-                      ? 'bg-blue-600 text-white font-bold' 
-                      : (dayOfWeek === 0 ? 'text-red-400' : 'text-gray-200 group-hover:bg-gray-800')
+                    isToday ? 'bg-blue-600 text-white font-bold' : (dayOfWeek === 0 ? 'text-red-400' : 'text-gray-200 group-hover:bg-gray-800')
                   }`}>
                     {d}
                   </div>
                   
-                  {/* 뱃지 영역 (이미지처럼 타이트하게) */}
                   <div className="flex flex-col gap-[3px] w-full px-1 items-center pointer-events-none">
                     {dayVacations.slice(0, 4).map(v => {
                       const isMyVacation = v.emp_id === user?.id;
+                      const empInfo = getEmpInfo(v.emp_id); // 💡 이름 매핑
                       return (
                         <div key={v.id} className={`w-full max-w-[50px] text-[9.5px] px-1 py-[3px] rounded-[4px] truncate text-center leading-none font-bold ${
                           isMyVacation ? 'bg-green-700 text-green-50' : 'bg-gray-700 text-gray-200'
                         }`}>
-                          {seats[v.emp_id]?.name || v.emp_id}
+                          {empInfo.name}
                         </div>
                       )
                     })}
@@ -145,7 +129,6 @@ function CalendarView({ setView, vacations, setVacations, seats, isAdmin, user }
           </div>
         </div>
 
-        {/* 📋 하단 타임라인 리스트 (앱 스타일) */}
         <div className="flex-1 bg-[#1A1A1A] border-t border-gray-800">
           {currentMonthVacations.length > 0 ? (
             <div className="flex flex-col">
@@ -153,32 +136,24 @@ function CalendarView({ setView, vacations, setVacations, seats, isAdmin, user }
                 const canDelete = isAdmin || vac.emp_id === user?.id;
                 const isMyVacation = vac.emp_id === user?.id;
                 const dateArr = vac.start_date.split('-');
+                const empInfo = getEmpInfo(vac.emp_id); // 💡 이름과 팀 매핑
                 
                 return (
                   <div key={vac.id} className="flex flex-col">
-                    {/* 날짜 구분선 (이미지 스타일) */}
                     <div className="px-5 py-3 text-[13px] font-bold text-gray-400 bg-[#121212]">
                       {dateArr[1]}월 {dateArr[2]}일, {getDayName(vac.start_date)}
                     </div>
-                    {/* 상세 카드 */}
                     <div className="flex items-center px-5 py-4 bg-[#1A1A1A] group">
-                      <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 text-lg mr-4 shrink-0">
-                        ✈️
-                      </div>
+                      <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 text-lg mr-4 shrink-0">✈️</div>
                       <div className="flex-1">
                         <h4 className="text-[15px] text-gray-100 font-bold mb-0.5 flex items-center gap-2">
-                          {seats[vac.emp_id]?.name || vac.emp_id}
+                          {empInfo.name}
                           {isMyVacation && <span className="text-[10px] bg-green-900/50 text-green-400 px-1.5 py-0.5 rounded">MY</span>}
                         </h4>
-                        <p className="text-[13px] text-gray-400">{seats[vac.emp_id]?.team || '팀 정보 없음'} / 휴가</p>
+                        <p className="text-[13px] text-gray-400">{empInfo.team} / 휴가</p>
                       </div>
                       {canDelete && (
-                        <button 
-                          onClick={() => handleDelete(vac.id)} 
-                          className="text-red-400 bg-red-900/20 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-900/40 transition-colors"
-                        >
-                          삭제
-                        </button>
+                        <button onClick={() => handleDelete(vac.id)} className="text-red-400 bg-red-900/20 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-900/40 transition-colors">삭제</button>
                       )}
                     </div>
                     <div className="ml-[72px] border-b border-gray-800"></div>
@@ -187,26 +162,16 @@ function CalendarView({ setView, vacations, setVacations, seats, isAdmin, user }
               })}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-              <span className="text-4xl mb-3">📭</span>
-              <p className="text-sm">이번 달 등록된 휴가 일정이 없습니다.</p>
-            </div>
+            <div className="flex flex-col items-center justify-center py-16 text-gray-500"><span className="text-4xl mb-3">📭</span><p className="text-sm">이번 달 등록된 휴가 일정이 없습니다.</p></div>
           )}
         </div>
-
       </div>
 
-      {/* 🚀 커스텀 등록 모달창 (유지) */}
       {confirmModal.isOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[200] animate-in fade-in zoom-in duration-200 p-4">
           <div className="bg-[#1C1C1E] p-8 rounded-[24px] border border-gray-800 shadow-2xl max-w-sm w-full flex flex-col items-center text-center">
-            
-            <div className="w-16 h-16 bg-blue-900/20 text-blue-400 rounded-full flex items-center justify-center text-3xl mb-4">
-              🗓️
-            </div>
-            
+            <div className="w-16 h-16 bg-blue-900/20 text-blue-400 rounded-full flex items-center justify-center text-3xl mb-4">🗓️</div>
             <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">{confirmModal.date}</h3>
-            
             {isAdmin ? (
               <p className="text-gray-400 mb-6 text-[13px]">해당 날짜에 휴가를 등록할<br/>직원이나 프리랜서를 선택하세요.</p>
             ) : (
@@ -217,18 +182,15 @@ function CalendarView({ setView, vacations, setVacations, seats, isAdmin, user }
               <div className="w-full mb-8 text-left">
                 <select value={modalEmp} onChange={e => setModalEmp(e.target.value)} className="w-full bg-[#2C2C2E] border-none p-3.5 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium">
                   <option value="">-- 대상자 선택 --</option>
-                  {Object.values(seats).map(s => <option key={s.id} value={s.id}>{s.name} ({s.team})</option>)}
+                  {/* 💡 [수정] 관리자가 등록할 때도 진짜 사번(emp_id)이 값으로 들어가게 수정 */}
+                  {Object.values(seats).map(s => <option key={s.id} value={s.emp_id || s.id}>{s.name} ({s.team})</option>)}
                 </select>
               </div>
             )}
 
             <div className="flex gap-3 w-full">
-              <button onClick={() => setConfirmModal({isOpen: false, date: ''})} className="flex-1 bg-[#2C2C2E] hover:bg-[#3A3A3C] text-white font-bold py-3.5 rounded-xl transition-colors text-[15px]">
-                취소
-              </button>
-              <button onClick={executeAdd} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition-colors text-[15px]">
-                등록하기
-              </button>
+              <button onClick={() => setConfirmModal({isOpen: false, date: ''})} className="flex-1 bg-[#2C2C2E] hover:bg-[#3A3A3C] text-white font-bold py-3.5 rounded-xl transition-colors text-[15px]">취소</button>
+              <button onClick={executeAdd} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition-colors text-[15px]">등록하기</button>
             </div>
           </div>
         </div>
